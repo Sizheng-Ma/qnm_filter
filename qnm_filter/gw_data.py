@@ -68,3 +68,92 @@ class Filter:
             final_rational_filter *= self.single_filter(-normalized_freq,\
                                      mode.l, mode.m, mode.n)
         return final_rational_filter
+
+
+class Data(pd.Series):
+    def __init__(self, *args, ifo=None, info=None,  **kwargs):
+        if ifo is not None:
+            ifo = ifo.upper()
+        kwargs['name'] = kwargs.get('name', ifo)
+        super(Data, self).__init__(*args, **kwargs)
+        self.ifo = ifo
+        self.info = info or {}
+
+    @property
+    def time(self):
+        """Time stamps."""
+        return self.index.values
+
+    @property
+    def delta_t(self) -> float:
+        """Sampling time interval."""
+        return self.index[1] - self.index[0]
+
+    @property
+    def fsamp(self) -> float:
+        """Sampling frequency (`1/delta_t`)."""
+        return 1/self.delta_t
+
+    @property
+    def fft_freq(self):
+        return np.fft.rfftfreq(len(self), d=self.delta_t) * 2 * np.pi
+    
+    @property
+    def fft_data(self):
+        return np.fft.rfft(self.values, norm='ortho')
+
+    def condition(self, t0=None, srate=None, flow=None, fhigh=None, trim=0.25,
+                  remove_mean=True, **kwargs):
+        srate = kwargs.pop('srate', srate)
+        flow = kwargs.pop('flow', flow)
+        raw_data = self.values
+        raw_time = self.index.values
+
+        ds = int(round(self.fsamp/srate))
+
+        if t0 is not None:
+            ds = int(ds or 1)
+            i = np.argmin(abs(raw_time - t0))
+            raw_time = np.roll(raw_time, -(i % ds))
+            raw_data = np.roll(raw_data, -(i % ds))
+
+        fny = 0.5/self.delta_t
+        # Filter
+        if flow and not fhigh:
+            b, a = ss.butter(4, flow/fny, btype='highpass', output='ba')
+        elif fhigh and not flow:
+            b, a = ss.butter(4, fhigh/fny, btype='lowpass', output='ba')
+        elif flow and fhigh:
+            b, a = ss.butter(4, (flow/fny, fhigh/fny), btype='bandpass',
+                              output='ba')
+
+        if flow or fhigh:
+            cond_data = ss.filtfilt(b, a, raw_data)
+        else:
+            cond_data = raw_data
+
+        if ds and ds > 1:
+            cond_data = ss.decimate(cond_data, ds, zero_phase=True)
+            cond_time = raw_time[::ds]
+
+        N = len(cond_data)
+        istart = int(round(trim*N))
+        iend = int(round((1-trim)*N))
+
+        cond_time = cond_time[istart:iend]
+        cond_data = cond_data[istart:iend]
+
+        if remove_mean:
+            cond_data -= np.mean(cond_data)
+
+        return Data(cond_data, index=cond_time, ifo=self.ifo)
+
+
+    def get_acf(self, **kws):
+        dt = self.delta_t
+        fs = 1/dt
+
+        freq, psd = ss.welch(self.values, fs=fs, nperseg=fs)
+        rho = 0.5*np.fft.irfft(psd) / self.delta_t
+        return Data(rho, index=np.arange(len(rho))*dt)
+
