@@ -1,15 +1,69 @@
+"""Defining the core :class:`Network` class.
+"""
+
 __all__ = ['Network']
 
-import numpy as np
 from .gw_data import *
 import h5py
 import lal
+import numpy as np
 import scipy.linalg as sl
 import warnings
 
 class Network(object):
+    """ Perform a ringdown filter analysis. Stores all the needed information.
+
+    Example usage::
+
+        import qnm_filter
+        input = dict(model_list = [(2, 2, 0)], #l, m, n
+                    # trucation time (geocenter, in second)
+                    t_init = 1126259462.4083147+2.0*1e-3,
+                    # length of the analysis window (in second)
+                    window_width = 0.2,
+                    # sampling rate after conditioning (in Hz)
+                    srate = 2048,
+                    # sky localization
+                    ra = 1.95, dec = -1.27,
+                    # lower limit of the high-pass filter (in Hz)
+                    flow = 20)
+        fit = qnm_filter.Network(**input)
+        fit.import_data('H-H1_GWOSC_16KHZ_R1-1126259447-32.hdf5')
+        fit.detector_alignment(**input)
+        fit.condition_data(**input)
+        fit.compute_acfs()
+        fit.cholesky_decomposition()
+        fit.add_filter(mass=68.5, chi=0.69, **input)
+        final_likelihood = fit.compute_likelihood(apply_filter=True)
+
+    Attributes
+    ----------
+    oringal_data : dict
+        dictionary containing unfiltered data for each detector.
+    filtered_data : dict
+        dictionary containing filtered data for each detector.
+    acfs : dict
+        dictionary containing autocovariance functions for each detector.
+    start_times : dict
+        dictionary containing trucation time (start time of analysis window)
+        for each detector, determined by specified sky location.
+    cholesky_L : dict
+        dictionary containing Cholesky-decomposition of covariance matrix for each detector.
+    inverse_cholesky_L : dict
+        dictionary containing the inverse of Cholesky-decomposition.
+    ra : float
+        source right ascension, in radian.
+    dec : float
+        source declination, in radian.
+    t_init : float
+        trucation time (start time of analysis window) at geocenter.
+    window_width : float
+        width of analysis window
+    TODO: other property
+    """
 
     def __init__(self, **kws):
+        """Constructor"""
         self.oringal_data = {}
         self.filtered_data = {}
         self.acfs = {}
@@ -23,6 +77,15 @@ class Network(object):
         self.window_width = kws.get('window_width', None)
 
     def import_ligo_data(self, filename):
+        """Read data from disk and store data in :attr:`Network.oringal_data`.
+
+        Supports only HDF5 files downloaded from https://www.gw-openscience.org.
+
+        Parameters
+        ----------
+        filename : string
+            name of file
+        """
 
         with h5py.File(filename, 'r') as f:
             h = f['strain/Strain'][:]
@@ -34,13 +97,32 @@ class Network(object):
                                num=len(h), endpoint=False)
 
             self.oringal_data[ifo] = Data(h, index=time, ifo=ifo)
-            # return self.oringal_data #TODO: remove this return
     
     def import_data_array(self, attr_name, data, time, ifo):
-        """TODO add comments"""
+        """Add the inputted data as a dynamic attribute
+
+        Parameters
+        ----------
+        attr_name : string
+            Name of the dynamic attribute
+        data : ndarray
+            Inputted data
+        time : ndarray
+            Time stamps
+        ifo : string
+            Name of interferometer
+        """
         getattr(self, attr_name)[ifo] = Data(data, index=time, ifo=ifo)
 
     def detector_alignment(self, **kwargs):
+        """Set the start times of analysis window at different
+        interferometers :attr:`Network.start_times` using sky location.
+
+        Parameters
+        ----------
+        t_init : float
+            The start time of analysis window at the geocenter.
+        """
         t_init = kwargs.pop('t_init', None)
         if t_init==None:
             raise ValueError("t_init is not provided")
@@ -60,6 +142,14 @@ class Network(object):
 
     @property
     def start_indices(self) -> dict:
+        """Find the index of a data point that is closet to the choosen
+        start time :attr:`Network.start_times` for each interferometers.
+
+        Returns
+        -------
+        i0_dict : dictionary
+            dictionary containing the start indices for all interferometers.
+        """
         i0_dict = {}
         for ifo, data in self.oringal_data.items():
             t0 = self.start_times[ifo]
@@ -68,6 +158,14 @@ class Network(object):
 
     @property
     def n_analyze(self):
+        """Number of data points in analysis window.
+
+        Should be the same for all interferometers.
+
+        Returns
+        -------
+        Length of truncated data array
+        """
         n_dict = {}
         for ifo, data in self.oringal_data.items():
             n_dict[ifo] = int(round(self.window_width/data.delta_t))
@@ -78,6 +176,19 @@ class Network(object):
 
 
     def truncate_data(self, network_data) -> dict:
+        """Extract data :attr:`Network.oringal_data` for all interferometers
+        that are in analysis window.
+
+        Parameters
+        ----------
+        network_data : dictionary
+            Network GW data to be truncated.
+
+        Returns
+        -------
+        data : dictionary
+            Truncated GW data for all interferometers.
+        """
         data = {}
         i0s = self.start_indices
         for i, d in network_data.items():
@@ -85,12 +196,14 @@ class Network(object):
         return data
 
     def condition_data(self, attr_name, **kwargs):
+        """Condition data for all interferometers."""
         unconditioned_data = getattr(self, attr_name)
         for ifo, data in unconditioned_data.items():
             t0 = self.start_times[ifo]
             getattr(self, attr_name)[ifo] = data.condition(t0=t0, **kwargs)
 
     def compute_acfs(self, attr_name, **kws):
+        """Compute ACFs for all interferometers in :attr:`Network.oringal_data`."""
         noisy_data = getattr(self, attr_name)
         if self.acfs:
             warnings.warn("Overwriting ACFs")
@@ -98,7 +211,8 @@ class Network(object):
             self.acfs[ifo] = data.get_acf(**kws)
 
     def cholesky_decomposition(self):
-        """Compute the Cholesky-decomposition of the covariance matrix.
+        """Compute the Cholesky-decomposition of covariance matrix :math:`C = L^TL`,
+        and the inverse of :math:`L`.
         """
         for ifo, acf in self.acfs.items():
             truncated_acf = acf.iloc[:self.n_analyze].values
@@ -113,6 +227,18 @@ class Network(object):
             self.inverse_cholesky_L[ifo] = L_inv
 
     def compute_likelihood(self, apply_filter = True):
+        """Compute likelihood for interferometer network.
+
+        Arguments
+        ---------
+        apply_filter : bool
+            option to apply rational filters (default True).
+
+        Returns
+        -------
+        likelihood : float
+            The likelihood of the interferometer network
+        """
         likelihood = 0
 
         if not apply_filter:
@@ -126,6 +252,8 @@ class Network(object):
         return likelihood
 
     def add_filter(self,  **kwargs):
+        """Apply rational filters to :attr:`Network.oringal_data` and store
+        the filtered data in :attr:`Network.filtered_data`."""
         for ifo, data in self.oringal_data.items():
             data_in_freq = data.fft_data
             freq = data.fft_freq
@@ -153,6 +281,19 @@ class Network(object):
         return self.compute_likelihood(apply_filter=True)
 
     def compute_SNR(self, data, template, ifo, optimal) -> float:
+        """Compute matched-filter/optimal SNR
+
+        Parameters
+        ----------
+        data : ndarray
+            Time-series data
+        template : ndarray
+            Ringdown template
+        ifo : string
+            Name of interferometer
+        optimal: bool
+            Compute optimal SNR
+        """
         template_w = np.dot(self.inverse_cholesky_L[ifo], template)
         data_w = np.dot(self.inverse_cholesky_L[ifo], data)
         snr_opt = np.sqrt(np.dot(template_w, template_w))
