@@ -98,13 +98,20 @@ class Filter:
         return final_rational_filter
 
 class Data(pd.Series):
-    def __init__(self, *args, ifo=None, info=None,  **kwargs):
+    """Container for gravitational data.
+
+    Attributes
+    ----------
+    ifo : str
+        name of interferometer.
+    """
+
+    def __init__(self, *args, ifo=None,  **kwargs):
         if ifo is not None:
             ifo = ifo.upper()
         kwargs['name'] = kwargs.get('name', ifo)
         super(Data, self).__init__(*args, **kwargs)
         self.ifo = ifo
-        self.info = info or {}
 
     @property
     def time(self):
@@ -118,19 +125,45 @@ class Data(pd.Series):
 
     @property
     def fsamp(self) -> float:
-        """Sampling frequency (`1/delta_t`)."""
+        """Sampling rate (frequency)."""
         return 1/self.delta_t
 
     @property
     def fft_freq(self):
+        """FFT angular frequency stamps."""
         return np.fft.rfftfreq(len(self), d=self.delta_t) * 2 * np.pi
     
     @property
     def fft_data(self):
+        """FFT of gravitational-wave data."""
         return np.fft.rfft(self.values, norm='ortho')
 
     def condition(self, t0=None, srate=None, flow=None, fhigh=None, trim=0.25,
                   remove_mean=True, **kwargs):
+        """Condition data.
+
+        Arguments
+        ---------
+        flow : float
+            lower frequency for high passing.
+        fhigh : float
+            higher frequency for low passing.
+        srate : int
+            sampling frequency after downsampling.
+        t0 : float
+            target time to be preserved after downsampling.
+        remove_mean : bool
+            explicitly remove mean from time series after conditioning.
+        trim : float
+            fraction of data to trim from edges after conditioning, to avoid
+            spectral issues if filtering.
+
+        Returns
+        -------
+        cond_data : Data
+            conditioned data object.
+        """
+
         srate = kwargs.pop('srate', srate)
         flow = kwargs.pop('flow', flow)
         raw_data = self.values
@@ -176,6 +209,7 @@ class Data(pd.Series):
         return Data(cond_data, index=cond_time, ifo=self.ifo)
 
     def get_acf(self, **kws):
+        """Estimate ACFs from time domain data using Welch's method."""
         dt = self.delta_t
         fs = 1/dt
 
