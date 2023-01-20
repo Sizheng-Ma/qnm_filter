@@ -1,3 +1,5 @@
+"""Utilities to manipulate GW data and rational filters.
+"""
 __all__ = ['Data', 'Filter']
 
 import qnm
@@ -23,6 +25,18 @@ def construct_mode_list(modes):
     return mode_list
 
 class Filter:
+    """Container for rational filters.
+
+    Attributes
+    ----------
+    chi : float
+        remnant dimensionless spin.
+    mass : float
+        remnant mass, in solar mass.
+    model_list : tuple
+        quasinormal modes to be filtered.
+    """
+
     def __init__(self, chi=None, mass=None, model_list=None):
         self.chi = chi
         self.mass = mass # in solar mass
@@ -30,31 +44,44 @@ class Filter:
 
     @property
     def get_spin(self) -> float:
+        """Return :attr:`Filter.chi`."""
         return self.chi   
 
     @property
     def get_mass(self) -> float:
+        """Return :attr:`Filter.mass`."""
         return self.mass   
     
     @property
     def get_model_list(self):
+        """Return :attr:`Filter.model_list`."""
         return self.model_list  
 
     @staticmethod
     def mass_unit(mass):
+        """Convert mass unit from solar mass to second."""
         return mass * T_MSUN
 
 
     def single_filter(self, normalized_freq, l, m, n):
-        """Compute the rational filter. normalized_freq is in the
-        unit of the remnant mass
+        """Compute rational filters. 
+
+        Parameters
+        ---------- 
+        normalized_freq : array
+            in remnant mass, frequencies that rational filters are evaluated at.
         """
         omega = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
         return (normalized_freq-omega)/(normalized_freq-np.conj(omega))\
                 *(normalized_freq+np.conj(omega))/(normalized_freq+omega)
     
     def total_filter(self, freq):
-        """freq is in Hz.
+        """The total rational filter that removes the modes stored in :attr:`Filter.model_list`.
+
+        Parameters
+        ---------- 
+        freq : array
+            in Hz, frequencies that the total filter is evaluated at.
         """
         final_rational_filter = 1
         if not bool(self.model_list):
