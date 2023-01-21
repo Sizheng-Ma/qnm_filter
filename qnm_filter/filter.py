@@ -123,3 +123,21 @@ class Network(object):
             ifft = np.fft.irfft(filter_in_freq*data_in_freq,\
                                                 norm='ortho', n=len(data))
             self.filtered_data[ifo] = Data(ifft, index=data.index, ifo=ifo)
+
+    def likelihood_vs_mass_spin(self, M_est, chi_est, **kwargs) -> float:
+        """Compute likelihood for the given mass and spin
+        
+        Parameters
+        ----------
+        M_est : float
+            in solar mass, mass of rational filters
+        chi_est : float
+            dimensionless spin of rational filters
+
+        Returns
+        -------
+        The corresponding likelihood.
+        """
+        model_list = kwargs.pop('model_list')
+        self.add_filter(mass=M_est, chi=chi_est, model_list=model_list)
+        return self.compute_likelihood(apply_filter=True)
