@@ -37,7 +37,7 @@ class Network(object):
 
     def detector_alignment(self, **kwargs):
         t_init = kwargs.pop('t_init', None)
-        if not t_init:
+        if t_init==None:
             raise ValueError("t_init is not provided")
         tgps = lal.LIGOTimeGPS(t_init)
 
