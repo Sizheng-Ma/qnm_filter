@@ -21,7 +21,7 @@ class Network(object):
         self.t_init = kws.get('t_init', None)
         self.window_width = kws.get('window_width', None)
 
-    def import_data(self, filename):
+    def import_ligo_data(self, filename):
 
         with h5py.File(filename, 'r') as f:
             h = f['strain/Strain'][:]
