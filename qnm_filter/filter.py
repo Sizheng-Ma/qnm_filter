@@ -21,7 +21,7 @@ class Network(object):
         self.t_init = kws.get('t_init', None)
         self.window_width = kws.get('window_width', None)
 
-    def import_data(self, filename):
+    def import_ligo_data(self, filename):
 
         with h5py.File(filename, 'r') as f:
             h = f['strain/Strain'][:]
@@ -34,6 +34,10 @@ class Network(object):
 
             self.oringal_data[ifo] = Data(h, index=time, ifo=ifo)
             # return self.oringal_data #TODO: remove this return
+    
+    def import_data_array(self, data, time, ifo):
+        """TODO add comments"""
+        self.oringal_data[ifo] = Data(data, index=time, ifo=ifo)
 
     def detector_alignment(self, **kwargs):
         t_init = kwargs.pop('t_init', None)
