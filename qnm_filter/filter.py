@@ -46,10 +46,13 @@ class Network(object):
         tgps = lal.LIGOTimeGPS(t_init)
 
         for ifo, data in self.oringal_data.items():
-            location = lal.cached_detector_by_prefix[ifo].location
-            dt_ifo = lal.TimeDelayFromEarthCenter(location,\
-                                             self.ra, self.dec, tgps)
-            self.start_times[ifo] = t_init + dt_ifo
+            if self.ra==None or self.dec==None:
+                self.start_times[ifo] = t_init
+            else:
+                location = lal.cached_detector_by_prefix[ifo].location
+                dt_ifo = lal.TimeDelayFromEarthCenter(location,\
+                                                self.ra, self.dec, tgps)
+                self.start_times[ifo] = t_init + dt_ifo
             if self.start_times[ifo] < data.time[0] or\
                 self.start_times[ifo] > data.time[-1]:
                 raise ValueError("{} start time not in data".format(ifo))
