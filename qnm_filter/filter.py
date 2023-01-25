@@ -5,12 +5,14 @@ from .gw_data import *
 import h5py
 import lal
 import scipy.linalg as sl
+import warnings
 
 class Network(object):
 
     def __init__(self, **kws):
         self.oringal_data = {}
         self.filtered_data = {}
+        self.pure_noise = {}
         self.acfs = {}
         self.start_times = {}
         self.cholesky_L = {}
@@ -38,6 +40,10 @@ class Network(object):
     def import_data_array(self, data, time, ifo):
         """TODO add comments"""
         self.oringal_data[ifo] = Data(data, index=time, ifo=ifo)
+
+    def import_pure_noise(self, data, time, ifo):
+        """TODO add comments"""
+        self.pure_noise[ifo] = Data(data, index=time, ifo=ifo)
 
     def detector_alignment(self, **kwargs):
         t_init = kwargs.pop('t_init', None)
@@ -90,8 +96,23 @@ class Network(object):
             conditioned_data[ifo] = data.condition(t0=t0, **kwargs)
         self.oringal_data = conditioned_data
 
+    def condition_pure_noise(self, **kwargs):
+        conditioned_data = {}
+        for ifo, data in self.pure_noise.items():
+            t0 = self.start_times[ifo]
+            conditioned_data[ifo] = data.condition(t0=t0, **kwargs)
+        self.pure_noise = conditioned_data
+
     def compute_acfs(self, **kws):
+        if self.acfs:
+            warnings.warn("Overwriting ACFs")
         for ifo, data in self.oringal_data.items():
+            self.acfs[ifo] = data.get_acf(**kws)
+
+    def compute_acfs_from_pure_noise(self, **kws):
+        if self.acfs:
+            warnings.warn("Overwriting ACFs")
+        for ifo, data in self.pure_noise.items():
             self.acfs[ifo] = data.get_acf(**kws)
 
     def cholesky_decomposition(self):
