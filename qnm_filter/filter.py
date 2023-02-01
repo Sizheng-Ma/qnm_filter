@@ -152,3 +152,13 @@ class Network(object):
         model_list = kwargs.pop('model_list')
         self.add_filter(mass=M_est, chi=chi_est, model_list=model_list)
         return self.compute_likelihood(apply_filter=True)
+
+    def compute_SNR(self, data, template, ifo, optimal) -> float:
+        template_w = np.dot(self.inverse_cholesky_L[ifo], template)
+        data_w = np.dot(self.inverse_cholesky_L[ifo], data)
+        snr_opt = np.sqrt(np.dot(template_w, template_w))
+        if optimal:
+            return snr_opt
+        else:
+            snr = np.dot(data_w, template_w)/snr_opt
+            return snr
