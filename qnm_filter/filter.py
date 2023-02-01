@@ -91,16 +91,11 @@ class Network(object):
             t0 = self.start_times[ifo]
             getattr(self, attr_name)[ifo] = data.condition(t0=t0, **kwargs)
 
-    def compute_acfs(self, **kws):
+    def compute_acfs(self, attr_name, **kws):
+        noisy_data = getattr(self, attr_name)
         if self.acfs:
             warnings.warn("Overwriting ACFs")
-        for ifo, data in self.oringal_data.items():
-            self.acfs[ifo] = data.get_acf(**kws)
-
-    def compute_acfs_from_pure_noise(self, **kws):
-        if self.acfs:
-            warnings.warn("Overwriting ACFs")
-        for ifo, data in self.pure_noise.items():
+        for ifo, data in noisy_data.items():
             self.acfs[ifo] = data.get_acf(**kws)
 
     def cholesky_decomposition(self):
