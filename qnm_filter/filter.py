@@ -37,13 +37,9 @@ class Network(object):
             self.oringal_data[ifo] = Data(h, index=time, ifo=ifo)
             # return self.oringal_data #TODO: remove this return
     
-    def import_data_array(self, data, time, ifo):
+    def import_data_array(self, attr_name, data, time, ifo):
         """TODO add comments"""
-        self.oringal_data[ifo] = Data(data, index=time, ifo=ifo)
-
-    def import_pure_noise(self, data, time, ifo):
-        """TODO add comments"""
-        self.pure_noise[ifo] = Data(data, index=time, ifo=ifo)
+        getattr(self, attr_name)[ifo] = Data(data, index=time, ifo=ifo)
 
     def detector_alignment(self, **kwargs):
         t_init = kwargs.pop('t_init', None)
