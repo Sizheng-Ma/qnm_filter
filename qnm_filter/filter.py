@@ -85,19 +85,11 @@ class Network(object):
             data[i] = Data(d.iloc[i0s[i]:i0s[i] + self.n_analyze])
         return data
 
-    def condition_data(self, **kwargs):
-        conditioned_data = {}
-        for ifo, data in self.oringal_data.items():
+    def condition_data(self, attr_name, **kwargs):
+        unconditioned_data = getattr(self, attr_name)
+        for ifo, data in unconditioned_data.items():
             t0 = self.start_times[ifo]
-            conditioned_data[ifo] = data.condition(t0=t0, **kwargs)
-        self.oringal_data = conditioned_data
-
-    def condition_pure_noise(self, **kwargs):
-        conditioned_data = {}
-        for ifo, data in self.pure_noise.items():
-            t0 = self.start_times[ifo]
-            conditioned_data[ifo] = data.condition(t0=t0, **kwargs)
-        self.pure_noise = conditioned_data
+            getattr(self, attr_name)[ifo] = data.condition(t0=t0, **kwargs)
 
     def compute_acfs(self, **kws):
         if self.acfs:
