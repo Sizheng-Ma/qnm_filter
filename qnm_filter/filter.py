@@ -12,7 +12,6 @@ class Network(object):
     def __init__(self, **kws):
         self.oringal_data = {}
         self.filtered_data = {}
-        self.pure_noise = {}
         self.acfs = {}
         self.start_times = {}
         self.cholesky_L = {}
