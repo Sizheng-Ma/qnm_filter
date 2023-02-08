@@ -37,13 +37,9 @@ class Network(object):
             self.oringal_data[ifo] = Data(h, index=time, ifo=ifo)
             # return self.oringal_data #TODO: remove this return
     
-    def import_data_array(self, data, time, ifo):
+    def import_data_array(self, attr_name, data, time, ifo):
         """TODO add comments"""
-        self.oringal_data[ifo] = Data(data, index=time, ifo=ifo)
-
-    def import_pure_noise(self, data, time, ifo):
-        """TODO add comments"""
-        self.pure_noise[ifo] = Data(data, index=time, ifo=ifo)
+        getattr(self, attr_name)[ifo] = Data(data, index=time, ifo=ifo)
 
     def detector_alignment(self, **kwargs):
         t_init = kwargs.pop('t_init', None)
@@ -89,30 +85,17 @@ class Network(object):
             data[i] = Data(d.iloc[i0s[i]:i0s[i] + self.n_analyze])
         return data
 
-    def condition_data(self, **kwargs):
-        conditioned_data = {}
-        for ifo, data in self.oringal_data.items():
+    def condition_data(self, attr_name, **kwargs):
+        unconditioned_data = getattr(self, attr_name)
+        for ifo, data in unconditioned_data.items():
             t0 = self.start_times[ifo]
-            conditioned_data[ifo] = data.condition(t0=t0, **kwargs)
-        self.oringal_data = conditioned_data
+            getattr(self, attr_name)[ifo] = data.condition(t0=t0, **kwargs)
 
-    def condition_pure_noise(self, **kwargs):
-        conditioned_data = {}
-        for ifo, data in self.pure_noise.items():
-            t0 = self.start_times[ifo]
-            conditioned_data[ifo] = data.condition(t0=t0, **kwargs)
-        self.pure_noise = conditioned_data
-
-    def compute_acfs(self, **kws):
+    def compute_acfs(self, attr_name, **kws):
+        noisy_data = getattr(self, attr_name)
         if self.acfs:
             warnings.warn("Overwriting ACFs")
-        for ifo, data in self.oringal_data.items():
-            self.acfs[ifo] = data.get_acf(**kws)
-
-    def compute_acfs_from_pure_noise(self, **kws):
-        if self.acfs:
-            warnings.warn("Overwriting ACFs")
-        for ifo, data in self.pure_noise.items():
+        for ifo, data in noisy_data.items():
             self.acfs[ifo] = data.get_acf(**kws)
 
     def cholesky_decomposition(self):
@@ -169,3 +152,13 @@ class Network(object):
         model_list = kwargs.pop('model_list')
         self.add_filter(mass=M_est, chi=chi_est, model_list=model_list)
         return self.compute_likelihood(apply_filter=True)
+
+    def compute_SNR(self, data, template, ifo, optimal) -> float:
+        template_w = np.dot(self.inverse_cholesky_L[ifo], template)
+        data_w = np.dot(self.inverse_cholesky_L[ifo], data)
+        snr_opt = np.sqrt(np.dot(template_w, template_w))
+        if optimal:
+            return snr_opt
+        else:
+            snr = np.dot(data_w, template_w)/snr_opt
+            return snr
