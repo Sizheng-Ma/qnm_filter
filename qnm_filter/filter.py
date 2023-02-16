@@ -37,7 +37,7 @@ class Network(object):
 
     Attributes
     ----------
-    oringal_data : dict
+    original_data : dict
         dictionary containing unfiltered data for each detector.
     filtered_data : dict
         dictionary containing filtered data for each detector.
@@ -62,7 +62,7 @@ class Network(object):
     """
 
     def __init__(self, **kws):
-        self.oringal_data = {}
+        self.original_data = {}
         self.filtered_data = {}
         self.acfs = {}
         self.start_times = {}
@@ -75,7 +75,7 @@ class Network(object):
         self.window_width = kws.get('window_width', None)
 
     def import_data(self, filename):
-        """Read data from disk and store data in :attr:`Network.oringal_data`.
+        """Read data from disk and store data in :attr:`Network.original_data`.
 
         Supports only HDF5 files downloaded from https://www.gw-openscience.org.
 
@@ -94,8 +94,8 @@ class Network(object):
             time = np.linspace(t_start, t_start+duration,\
                                num=len(h), endpoint=False)
 
-            self.oringal_data[ifo] = Data(h, index=time, ifo=ifo)
-            # return self.oringal_data #TODO: remove this return
+            self.original_data[ifo] = Data(h, index=time, ifo=ifo)
+            # return self.original_data #TODO: remove this return
 
     def detector_alignment(self, **kwargs):
         """Set the start times of analysis window at different
@@ -112,7 +112,7 @@ class Network(object):
             raise ValueError("t_init is not provided")
         tgps = lal.LIGOTimeGPS(t_init)
 
-        for ifo, data in self.oringal_data.items():
+        for ifo, data in self.original_data.items():
             location = lal.cached_detector_by_prefix[ifo].location
             dt_ifo = lal.TimeDelayFromEarthCenter(location,\
                                              self.ra, self.dec, tgps)
@@ -132,7 +132,7 @@ class Network(object):
             dictionary containing the start indices for all interferometers.
         """
         i0_dict = {}
-        for ifo, data in self.oringal_data.items():
+        for ifo, data in self.original_data.items():
             t0 = self.start_times[ifo]
             i0_dict[ifo] = abs(data.time - t0).argmin()
         return i0_dict
@@ -148,7 +148,7 @@ class Network(object):
         Length of truncated data array
         """
         n_dict = {}
-        for ifo, data in self.oringal_data.items():
+        for ifo, data in self.original_data.items():
             n_dict[ifo] = int(round(self.window_width/data.delta_t))
         if len(set(n_dict.values())) > 1:
             raise ValueError("Detectors have different sampling rates")
@@ -157,7 +157,7 @@ class Network(object):
 
 
     def truncate_data(self, network_data) -> dict:
-        """Extract data :attr:`Network.oringal_data` for all interferometers
+        """Extract data :attr:`Network.original_data` for all interferometers
         that are in analysis window.
 
         Parameters
@@ -180,14 +180,14 @@ class Network(object):
         """Condition data for all interferometers."""
         #TODO ds???????
         conditioned_data = {}
-        for ifo, data in self.oringal_data.items():
+        for ifo, data in self.original_data.items():
             t0 = self.start_times[ifo]
             conditioned_data[ifo] = data.condition(t0=t0, **kwargs)
-        self.oringal_data = conditioned_data
+        self.original_data = conditioned_data
 
     def compute_acfs(self, **kws):
-        """Compute ACFs for all interferometers in :attr:`Network.oringal_data`."""
-        for ifo, data in self.oringal_data.items():
+        """Compute ACFs for all interferometers in :attr:`Network.original_data`."""
+        for ifo, data in self.original_data.items():
             self.acfs[ifo] = data.get_acf(**kws)
 
     def cholesky_decomposition(self):
@@ -222,7 +222,7 @@ class Network(object):
         likelihood = 0
 
         if not apply_filter:
-            truncation = self.truncate_data(self.oringal_data)
+            truncation = self.truncate_data(self.original_data)
         else:
             truncation = self.truncate_data(self.filtered_data)
 
@@ -232,9 +232,9 @@ class Network(object):
         return likelihood
 
     def add_filter(self,  **kwargs):
-        """Apply rational filters to :attr:`Network.oringal_data` and store
+        """Apply rational filters to :attr:`Network.original_data` and store
         the filtered data in :attr:`Network.filtered_data`."""
-        for ifo, data in self.oringal_data.items():
+        for ifo, data in self.original_data.items():
             data_in_freq = data.fft_data
             freq = data.fft_freq
             filter_in_freq = Filter(**kwargs).total_filter(freq)
