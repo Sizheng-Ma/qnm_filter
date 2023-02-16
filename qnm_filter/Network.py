@@ -39,6 +39,8 @@ class Network(object):
     ----------
     original_data : dict
         dictionary containing unfiltered data for each detector.
+    conditioned_data : dict
+        dictionary containing conditioned data for each detector.
     filtered_data : dict
         dictionary containing filtered data for each detector.
     acfs : dict
@@ -63,6 +65,7 @@ class Network(object):
 
     def __init__(self, **kws):
         self.original_data = {}
+        self.conditioned_data = {}
         self.filtered_data = {}
         self.acfs = {}
         self.start_times = {}
@@ -132,7 +135,7 @@ class Network(object):
             dictionary containing the start indices for all interferometers.
         """
         i0_dict = {}
-        for ifo, data in self.original_data.items():
+        for ifo, data in self.conditioned_data.items():
             t0 = self.start_times[ifo]
             i0_dict[ifo] = abs(data.time - t0).argmin()
         return i0_dict
@@ -148,7 +151,7 @@ class Network(object):
         Length of truncated data array
         """
         n_dict = {}
-        for ifo, data in self.original_data.items():
+        for ifo, data in self.conditioned_data.items():
             n_dict[ifo] = int(round(self.window_width/data.delta_t))
         if len(set(n_dict.values())) > 1:
             raise ValueError("Detectors have different sampling rates")
@@ -177,17 +180,21 @@ class Network(object):
         return data
 
     def condition_data(self, **kwargs):
-        """Condition data for all interferometers."""
+        """Condition data for all interferometers.
+        Conditioning downsamples the frequency rate of the data, appplies a filter
+        (highpass by default), discards the first and last 25% of the data, and
+        centers signal around 0.
+        """
         #TODO ds???????
         conditioned_data = {}
         for ifo, data in self.original_data.items():
             t0 = self.start_times[ifo]
             conditioned_data[ifo] = data.condition(t0=t0, **kwargs)
-        self.original_data = conditioned_data
+        self.conditioned_data = conditioned_data
 
     def compute_acfs(self, **kws):
-        """Compute ACFs for all interferometers in :attr:`Network.original_data`."""
-        for ifo, data in self.original_data.items():
+        """Compute ACFs for all interferometers in :attr:`Network.conditioned_data`."""
+        for ifo, data in self.conditioned_data.items():
             self.acfs[ifo] = data.get_acf(**kws)
 
     def cholesky_decomposition(self):
@@ -222,7 +229,7 @@ class Network(object):
         likelihood = 0
 
         if not apply_filter:
-            truncation = self.truncate_data(self.original_data)
+            truncation = self.truncate_data(self.conditioned_data)
         else:
             truncation = self.truncate_data(self.filtered_data)
 
@@ -232,9 +239,9 @@ class Network(object):
         return likelihood
 
     def add_filter(self,  **kwargs):
-        """Apply rational filters to :attr:`Network.original_data` and store
+        """Apply rational filters to :attr:`Network.conditioned_data` and store
         the filtered data in :attr:`Network.filtered_data`."""
-        for ifo, data in self.original_data.items():
+        for ifo, data in self.conditioned_data.items():
             data_in_freq = data.fft_data
             freq = data.fft_freq
             filter_in_freq = Filter(**kwargs).total_filter(freq)
