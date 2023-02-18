@@ -1,3 +1,5 @@
+"""Utilities to manipulate GW data and rational filters.
+"""
 __all__ = ['Data', 'Filter']
 
 import qnm
@@ -23,38 +25,64 @@ def construct_mode_list(modes):
     return mode_list
 
 class Filter:
+    """Container for rational filters.
+
+    Attributes
+    ----------
+    chi : float
+        remnant dimensionless spin.
+    mass : float
+        remnant mass, in solar mass.
+    model_list : tuple
+        quasinormal modes to be filtered.
+    """
+
     def __init__(self, chi=None, mass=None, model_list=None):
+        """Constructor"""
         self.chi = chi
         self.mass = mass # in solar mass
         self.model_list = construct_mode_list(model_list)
 
     @property
     def get_spin(self) -> float:
+        """Return :attr:`Filter.chi`."""
         return self.chi   
 
     @property
     def get_mass(self) -> float:
+        """Return :attr:`Filter.mass`."""
         return self.mass   
     
     @property
     def get_model_list(self):
+        """Return :attr:`Filter.model_list`."""
         return self.model_list  
 
     @staticmethod
     def mass_unit(mass):
+        """Convert mass unit from solar mass to second."""
         return mass * T_MSUN
 
 
     def single_filter(self, normalized_freq, l, m, n):
-        """Compute the rational filter. normalized_freq is in the
-        unit of the remnant mass
+        """Compute rational filters. 
+
+        Parameters
+        ---------- 
+        normalized_freq : array
+            in remnant mass, frequencies that rational filters are evaluated at.
         """
         omega = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
         return (normalized_freq-omega)/(normalized_freq-np.conj(omega))\
                 *(normalized_freq+np.conj(omega))/(normalized_freq+omega)
     
     def total_filter(self, freq):
-        """freq is in Hz.
+        """The total rational filter that removes the modes stored in :attr:`Filter.model_list`.
+
+        Parameters
+        ---------- 
+        freq : array
+            in Hz, frequencies that the total filter is evaluated at.
         """
         final_rational_filter = 1
         if not bool(self.model_list):
@@ -69,15 +97,21 @@ class Filter:
                                      mode.l, mode.m, mode.n)
         return final_rational_filter
 
-
 class Data(pd.Series):
-    def __init__(self, *args, ifo=None, info=None,  **kwargs):
+    """Container for gravitational data.
+
+    Attributes
+    ----------
+    ifo : str
+        name of interferometer.
+    """
+
+    def __init__(self, *args, ifo=None,  **kwargs):
         if ifo is not None:
             ifo = ifo.upper()
         kwargs['name'] = kwargs.get('name', ifo)
         super(Data, self).__init__(*args, **kwargs)
         self.ifo = ifo
-        self.info = info or {}
 
     @property
     def time(self):
@@ -91,19 +125,45 @@ class Data(pd.Series):
 
     @property
     def fsamp(self) -> float:
-        """Sampling frequency (`1/delta_t`)."""
+        """Sampling rate (frequency)."""
         return 1/self.delta_t
 
     @property
     def fft_freq(self):
+        """FFT angular frequency stamps."""
         return np.fft.rfftfreq(len(self), d=self.delta_t) * 2 * np.pi
     
     @property
     def fft_data(self):
+        """FFT of gravitational-wave data."""
         return np.fft.rfft(self.values, norm='ortho')
 
     def condition(self, t0=None, srate=None, flow=None, fhigh=None, trim=0.25,
                   remove_mean=True, **kwargs):
+        """Condition data.
+
+        Arguments
+        ---------
+        flow : float
+            lower frequency for high passing.
+        fhigh : float
+            higher frequency for low passing.
+        srate : int
+            sampling frequency after downsampling.
+        t0 : float
+            target time to be preserved after downsampling.
+        remove_mean : bool
+            explicitly remove mean from time series after conditioning.
+        trim : float
+            fraction of data to trim from edges after conditioning, to avoid
+            spectral issues if filtering.
+
+        Returns
+        -------
+        cond_data : Data
+            conditioned data object.
+        """
+
         srate = kwargs.pop('srate', srate)
         flow = kwargs.pop('flow', flow)
         raw_data = self.values
@@ -148,12 +208,11 @@ class Data(pd.Series):
 
         return Data(cond_data, index=cond_time, ifo=self.ifo)
 
-
     def get_acf(self, **kws):
+        """Estimate ACFs from time domain data using Welch's method."""
         dt = self.delta_t
         fs = 1/dt
 
         freq, psd = ss.welch(self.values, fs=fs, nperseg=fs)
         rho = 0.5*np.fft.irfft(psd) / self.delta_t
         return Data(rho, index=np.arange(len(rho))*dt)
-
