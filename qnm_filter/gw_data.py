@@ -2,14 +2,14 @@
 """
 __all__ = ['Data', 'Filter']
 
+import astropy.constants as c
 import qnm
 import pandas as pd
 import numpy as np
-import lal
 from collections import namedtuple
 import scipy.signal as ss
 
-T_MSUN = lal.MSUN_SI * lal.G_SI / lal.C_SI**3
+T_MSUN = c.M_sun.value * c.G.value / c.c.value**3
 
 ModeIndex = namedtuple('ModeIndex', ['l', 'm', 'n'])
 
