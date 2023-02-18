@@ -107,9 +107,6 @@ class Data(pd.Series):
     """
 
     def __init__(self, *args, ifo=None,  **kwargs):
-        if ifo is not None:
-            ifo = ifo.upper()
-        kwargs['name'] = kwargs.get('name', ifo)
         super(Data, self).__init__(*args, **kwargs)
         self.ifo = ifo
 
