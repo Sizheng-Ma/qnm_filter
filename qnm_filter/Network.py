@@ -217,7 +217,7 @@ class Network(object):
         if self.acfs:
             warnings.warn("Overwriting ACFs")
         for ifo, data in noisy_data.items():
-            self.acfs[ifo] = data.get_acf(**kws)
+            self.acfs[ifo] = data.data_acf(**kws)
 
     def cholesky_decomposition(self):
         """Compute the Cholesky-decomposition of covariance matrix :math:`C = L^TL`,

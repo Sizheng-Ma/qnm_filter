@@ -196,7 +196,7 @@ class Data(pd.Series):
 
         return Data(cond_data, index=cond_time, ifo=self.ifo)
 
-    def get_acf(self, **kws):
+    def data_acf(self, **kws):
         """Estimate ACFs from time domain data using Welch's method."""
         dt = self.time_interval
         fs = self.fft_span
