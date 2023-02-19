@@ -128,6 +128,8 @@ class Data(pd.Series):
                   remove_mean=True, **kwargs):
         """Condition data.
 
+        Credit: This function is from `git@github.com:maxisi/ringdown.git`.
+        
         Arguments
         ---------
         flow : float
