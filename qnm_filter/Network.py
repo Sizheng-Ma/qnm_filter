@@ -30,8 +30,8 @@ class Network(object):
         fit = qnm_filter.Network(**input)
         fit.import_data('H-H1_GWOSC_16KHZ_R1-1126259447-32.hdf5')
         fit.detector_alignment(**input)
-        fit.condition_data(**input)
-        fit.compute_acfs()
+        fit.condition_data('original_data', **input)
+        fit.compute_acfs('original_data')
         fit.cholesky_decomposition()
         fit.add_filter(mass=68.5, chi=0.69, **input)
         final_likelihood = fit.compute_likelihood(apply_filter=True)
@@ -59,7 +59,6 @@ class Network(object):
         trucation time (start time of analysis window) at geocenter.
     window_width : float
         width of analysis window
-    TODO: other property
     """
 
     def __init__(self, **kws):
@@ -99,7 +98,7 @@ class Network(object):
             self.original_data[ifo] = Data(h, index=time, ifo=ifo)
     
     def import_data_array(self, attr_name, data, time, ifo):
-        """Add the inputted data as a dynamic attribute
+        """Add the inputted data to a dynamic/existing attribute.
 
         Parameters
         ----------
@@ -174,10 +173,8 @@ class Network(object):
 
         return list(n_dict.values())[0]
 
-
     def truncate_data(self, network_data) -> dict:
-        """Extract data :attr:`Network.original_data` for all interferometers
-        that are in analysis window.
+        """Select segments of the given data that are in analysis window.
 
         Parameters
         ----------
@@ -196,14 +193,26 @@ class Network(object):
         return data
 
     def condition_data(self, attr_name, **kwargs):
-        """Condition data for all interferometers."""
+        """Condition data for all interferometers.
+
+        Parameters
+        ----------
+        attr_name : string
+            Name of data to be conditioned
+        """
         unconditioned_data = getattr(self, attr_name)
         for ifo, data in unconditioned_data.items():
             t0 = self.start_times[ifo]
             getattr(self, attr_name)[ifo] = data.condition(t0=t0, **kwargs)
 
     def compute_acfs(self, attr_name, **kws):
-        """Compute ACFs for all interferometers in :attr:`Network.original_data`."""
+        """Compute ACFs with data named `attr_name`.
+
+        Parameters
+        ----------
+        attr_name : string
+            Name of data for ACF estimation
+        """
         noisy_data = getattr(self, attr_name)
         if self.acfs:
             warnings.warn("Overwriting ACFs")
@@ -237,7 +246,7 @@ class Network(object):
         Returns
         -------
         likelihood : float
-            The likelihood of the interferometer network
+            The likelihood of interferometer network
         """
         likelihood = 0
 
@@ -263,7 +272,7 @@ class Network(object):
             self.filtered_data[ifo] = Data(ifft, index=data.index, ifo=ifo)
 
     def likelihood_vs_mass_spin(self, M_est, chi_est, **kwargs) -> float:
-        """Compute likelihood for the given mass and spin
+        """Compute likelihood for the given mass and spin.
         
         Parameters
         ----------
@@ -281,7 +290,7 @@ class Network(object):
         return self.compute_likelihood(apply_filter=True)
 
     def compute_SNR(self, data, template, ifo, optimal) -> float:
-        """Compute matched-filter/optimal SNR
+        """Compute matched-filter/optimal SNR.
 
         Parameters
         ----------

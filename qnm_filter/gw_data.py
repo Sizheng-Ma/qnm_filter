@@ -19,7 +19,7 @@ class Filter:
         remnant dimensionless spin.
     mass : float
         remnant mass, in solar mass.
-    model_list : a list of tuples
+    model_list : a list of dictionaries
         quasinormal modes to be filtered.
     """
 
