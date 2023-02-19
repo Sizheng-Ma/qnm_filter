@@ -135,10 +135,10 @@ class Network(object):
                 location = lal.cached_detector_by_prefix[ifo].location
                 dt_ifo = lal.TimeDelayFromEarthCenter(location,\
                                                 self.ra, self.dec, tgps)
-                self.start_times[ifo] = t_init + dt_ifo
-            if self.start_times[ifo] < data.time[0] or\
-                self.start_times[ifo] > data.time[-1]:
-                raise ValueError("{} start time not in data".format(ifo))
+                shifted_time = t_init + dt_ifo
+                self.start_times[ifo] = shifted_time
+            if not (data.time[0] < shifted_time < data.time[-1]):
+                raise ValueError("Invalid start time for {}".format(ifo))
 
     @property
     def first_index(self) -> dict:
