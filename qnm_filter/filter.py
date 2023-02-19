@@ -157,7 +157,7 @@ class Network(object):
         return i0_dict
 
     @property
-    def n_analyze(self):
+    def sampling_n(self):
         """Number of data points in analysis window.
 
         Should be the same for all interferometers.
@@ -192,7 +192,7 @@ class Network(object):
         data = {}
         i0s = self.start_indices
         for i, d in network_data.items():
-            data[i] = Data(d.iloc[i0s[i]:i0s[i] + self.n_analyze])
+            data[i] = Data(d.iloc[i0s[i]:i0s[i] + self.sampling_n])
         return data
 
     def condition_data(self, attr_name, **kwargs):
@@ -215,7 +215,7 @@ class Network(object):
         and the inverse of :math:`L`.
         """
         for ifo, acf in self.acfs.items():
-            truncated_acf = acf.iloc[:self.n_analyze].values
+            truncated_acf = acf.iloc[:self.sampling_n].values
             L = np.linalg.cholesky(sl.toeplitz(truncated_acf))
             L_inv = np.linalg.inv(L)
             norm = np.sqrt(np.sum(abs(np.dot(L_inv,L)
