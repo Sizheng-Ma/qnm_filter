@@ -6,23 +6,9 @@ import astropy.constants as c
 import qnm
 import pandas as pd
 import numpy as np
-from collections import namedtuple
 import scipy.signal as ss
 
 T_MSUN = c.M_sun.value * c.G.value / c.c.value**3
-
-ModeIndex = namedtuple('ModeIndex', ['l', 'm', 'n'])
-
-def construct_mode_list(modes):
-    if modes is None:
-        modes = []
-    elif isinstance(modes, str):
-        from ast import literal_eval
-        modes = literal_eval(modes)
-    mode_list = []
-    for (l, m, n) in modes:
-        mode_list.append(ModeIndex(l, m, n))
-    return mode_list
 
 class Filter:
     """Container for rational filters.
@@ -33,7 +19,7 @@ class Filter:
         remnant dimensionless spin.
     mass : float
         remnant mass, in solar mass.
-    model_list : tuple
+    model_list : a list of tuples
         quasinormal modes to be filtered.
     """
 
@@ -41,7 +27,10 @@ class Filter:
         """Constructor"""
         self.chi = chi
         self.mass = mass # in solar mass
-        self.model_list = construct_mode_list(model_list)
+
+        self.model_list = []
+        for (l, m, n) in model_list:
+            self.model_list.append(dict(l = l, m = m, n = n))
 
     @property
     def get_spin(self) -> float:
@@ -94,7 +83,7 @@ class Filter:
         normalized_freq = freq * self.mass * T_MSUN
         for mode in self.model_list:
             final_rational_filter *= self.single_filter(-normalized_freq,\
-                                     mode.l, mode.m, mode.n)
+                                     mode["l"], mode["m"], mode["n"])
         return final_rational_filter
 
 class Data(pd.Series):
