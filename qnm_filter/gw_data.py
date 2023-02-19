@@ -165,7 +165,7 @@ class Data(pd.Series):
             raw_time = np.roll(raw_time, -(i % ds))
             raw_data = np.roll(raw_data, -(i % ds))
 
-        fny = 0.5/self.time_interval
+        fny = 0.5 * self.fft_span
         # Filter
         if flow and not fhigh:
             b, a = ss.butter(4, flow/fny, btype='highpass', output='ba')
