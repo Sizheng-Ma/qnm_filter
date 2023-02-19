@@ -110,9 +110,9 @@ class Data(pd.Series):
         return self.index[1] - self.index[0]
 
     @property
-    def fsamp(self) -> float:
-        """Sampling rate (frequency)."""
-        return 1/self.time_interval
+    def fft_span(self) -> float:
+        """Span of FFT."""
+        return 1./self.time_interval
 
     @property
     def fft_freq(self):
@@ -155,7 +155,7 @@ class Data(pd.Series):
         raw_data = self.values
         raw_time = self.index.values
 
-        ds = int(round(self.fsamp/srate))
+        ds = int(round(self.fft_span/srate))
 
         if t0 is not None:
             ds = int(ds or 1)
@@ -197,8 +197,8 @@ class Data(pd.Series):
     def get_acf(self, **kws):
         """Estimate ACFs from time domain data using Welch's method."""
         dt = self.time_interval
-        fs = 1/dt
+        fs = self.fft_span
 
         freq, psd = ss.welch(self.values, fs=fs, nperseg=fs)
-        rho = 0.5*np.fft.irfft(psd) / self.time_interval
+        rho = 0.5*np.fft.irfft(psd) * fs
         return Data(rho, index=np.arange(len(rho))*dt)
