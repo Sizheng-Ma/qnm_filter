@@ -167,7 +167,7 @@ class Network(object):
         """
         n_dict = {}
         for ifo, data in self.original_data.items():
-            n_dict[ifo] = int(round(self.window_width/data.delta_t))
+            n_dict[ifo] = int(round(self.window_width/data.time_interval))
         if len(set(n_dict.values())) > 1:
             raise ValueError("Detectors have different sampling rates")
 
