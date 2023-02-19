@@ -143,7 +143,7 @@ class Network(object):
     @property
     def first_index(self) -> dict:
         """Find the index of a data point that is closet to the choosen
-        start time :attr:`Network.start_times` for each interferometers.
+        start time :attr:`Network.start_times` for each interferometer.
 
         Returns
         -------
