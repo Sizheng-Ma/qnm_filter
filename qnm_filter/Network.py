@@ -189,7 +189,8 @@ class Network(object):
         data : dictionary
             Truncated GW data for all interferometers.
         """
-        #NOTE: self.first_index and self.sampling_n do not have network_data (=conditioned/filtered_data) passed to them. However, their values are the same for both possible values of network_data
+        #NOTE: self.first_index and self.sampling_n are not passed the argument network_data (= conditioned/filtered_data). 
+        #However, their values are the same for both possible values of network_data
         data = {}
         i0s = self.first_index 
         for i, d in network_data.items():
