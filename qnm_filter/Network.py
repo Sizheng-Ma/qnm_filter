@@ -40,6 +40,8 @@ class Network(object):
     ----------
     original_data : dict
         dictionary containing unfiltered data for each detector.
+    conditioned_data : dict
+        dictionary containing conditioned data for each detector.
     filtered_data : dict
         dictionary containing filtered data for each detector.
     acfs : dict
@@ -65,6 +67,7 @@ class Network(object):
     def __init__(self, **kws):
         """Constructor"""
         self.original_data = {}
+        self.conditioned_data = {}
         self.filtered_data = {}
         self.acfs = {}
         self.start_times = {}
@@ -144,14 +147,13 @@ class Network(object):
     def first_index(self) -> dict:
         """Find the index of a data point that is closet to the choosen
         start time :attr:`Network.start_times` for each interferometer.
-
         Returns
         -------
         i0_dict : dictionary
             dictionary containing the start indices for all interferometers.
         """
         i0_dict = {}
-        for ifo, data in self.original_data.items():
+        for ifo, data in self.conditioned_data.items():
             t0 = self.start_times[ifo]
             i0_dict[ifo] = abs(data.time - t0).argmin()
         return i0_dict
@@ -159,15 +161,13 @@ class Network(object):
     @property
     def sampling_n(self):
         """Number of data points in analysis window.
-
         Should be the same for all interferometers.
-
         Returns
         -------
         Length of truncated data array
         """
         n_dict = {}
-        for ifo, data in self.original_data.items():
+        for ifo, data in self.conditioned_data.items():
             n_dict[ifo] = int(round(self.window_width/data.delta_t))
         if len(set(n_dict.values())) > 1:
             raise ValueError("Detectors have different sampling rates")
@@ -189,8 +189,9 @@ class Network(object):
         data : dictionary
             Truncated GW data for all interferometers.
         """
+        #NOTE: self.first_index and self.sampling_n do not have network_data (=conditioned/filtered_data) passed to them. However, their values are the same for both possible values of network_data
         data = {}
-        i0s = self.first_index
+        i0s = self.first_index 
         for i, d in network_data.items():
             data[i] = Data(d.iloc[i0s[i]:i0s[i] + self.sampling_n])
         return data
@@ -200,10 +201,10 @@ class Network(object):
         unconditioned_data = getattr(self, attr_name)
         for ifo, data in unconditioned_data.items():
             t0 = self.start_times[ifo]
-            getattr(self, attr_name)[ifo] = data.condition(t0=t0, **kwargs)
+            self.conditioned_data[ifo] = data.condition(t0=t0, **kwargs)
 
     def compute_acfs(self, attr_name, **kws):
-        """Compute ACFs for all interferometers in :attr:`Network.original_data`."""
+        """Compute ACFs for all interferometers in :attr:`Network.attr_name`."""
         noisy_data = getattr(self, attr_name)
         if self.acfs:
             warnings.warn("Overwriting ACFs")
@@ -242,7 +243,7 @@ class Network(object):
         likelihood = 0
 
         if not apply_filter:
-            truncation = self.truncate_data(self.original_data)
+            truncation = self.truncate_data(self.conditioned_data)
         else:
             truncation = self.truncate_data(self.filtered_data)
 
@@ -254,7 +255,7 @@ class Network(object):
     def add_filter(self,  **kwargs):
         """Apply rational filters to :attr:`Network.original_data` and store
         the filtered data in :attr:`Network.filtered_data`."""
-        for ifo, data in self.original_data.items():
+        for ifo, data in self.conditioned_data.items():
             data_in_freq = data.fft_data
             freq = data.fft_freq
             filter_in_freq = Filter(**kwargs).total_filter(freq)
