@@ -43,12 +43,12 @@ class Filter:
         return self.mass   
     
     @property
-    def get_model_list(self):
+    def get_model_list(self) -> list[dict]:
         """Return :attr:`Filter.model_list`."""
         return self.model_list  
 
     @staticmethod
-    def mass_unit(mass):
+    def mass_unit(mass) -> float:
         """Convert mass unit from solar mass to second."""
         return mass * T_MSUN
 
