@@ -30,8 +30,8 @@ class Network(object):
         fit = qnm_filter.Network(**input)
         fit.import_data('H-H1_GWOSC_16KHZ_R1-1126259447-32.hdf5')
         fit.detector_alignment(**input)
-        fit.condition_data(**input)
-        fit.compute_acfs()
+        fit.condition_data('original_data', **input)
+        fit.compute_acfs('conditioned_data')
         fit.cholesky_decomposition()
         fit.add_filter(mass=68.5, chi=0.69, **input)
         final_likelihood = fit.compute_likelihood(apply_filter=True)
@@ -61,7 +61,6 @@ class Network(object):
         trucation time (start time of analysis window) at geocenter.
     window_width : float
         width of analysis window
-    TODO: other property
     """
 
     def __init__(self, **kws):
@@ -102,7 +101,7 @@ class Network(object):
             self.original_data[ifo] = Data(h, index=time, ifo=ifo)
     
     def import_data_array(self, attr_name, data, time, ifo):
-        """Add the inputted data as a dynamic attribute
+        """Add the inputted data to a dynamic/existing attribute.
 
         Parameters
         ----------
@@ -138,10 +137,10 @@ class Network(object):
                 location = lal.cached_detector_by_prefix[ifo].location
                 dt_ifo = lal.TimeDelayFromEarthCenter(location,\
                                                 self.ra, self.dec, tgps)
-                self.start_times[ifo] = t_init + dt_ifo
-            if self.start_times[ifo] < data.time[0] or\
-                self.start_times[ifo] > data.time[-1]:
-                raise ValueError("{} start time not in data".format(ifo))
+                shifted_time = t_init + dt_ifo
+                self.start_times[ifo] = shifted_time
+            if not (data.time[0] < shifted_time < data.time[-1]):
+                raise ValueError("Invalid start time for {}".format(ifo))
 
     @property
     def first_index(self) -> dict:
@@ -169,17 +168,20 @@ class Network(object):
         Length of truncated data array
         """
         n_dict = {}
+<<<<<<< HEAD
         for ifo, data in self.conditioned_data.items():
             n_dict[ifo] = int(round(self.window_width/data.delta_t))
+=======
+        for ifo, data in self.original_data.items():
+            n_dict[ifo] = int(round(self.window_width/data.time_interval))
+>>>>>>> 3dfc72b2e90d582c894859287b1ddaa96a881bef
         if len(set(n_dict.values())) > 1:
             raise ValueError("Detectors have different sampling rates")
 
         return list(n_dict.values())[0]
 
-
     def truncate_data(self, network_data) -> dict:
-        """Extract data :attr:`Network.original_data` for all interferometers
-        that are in analysis window.
+        """Select segments of the given data that are in analysis window.
 
         Parameters
         ----------
@@ -200,19 +202,35 @@ class Network(object):
         return data
 
     def condition_data(self, attr_name, **kwargs):
-        """Condition data for all interferometers."""
+        """Condition data for all interferometers.
+
+        Parameters
+        ----------
+        attr_name : string
+            Name of data to be conditioned
+        """
         unconditioned_data = getattr(self, attr_name)
         for ifo, data in unconditioned_data.items():
             t0 = self.start_times[ifo]
             self.conditioned_data[ifo] = data.condition(t0=t0, **kwargs)
 
     def compute_acfs(self, attr_name, **kws):
+<<<<<<< HEAD
         """Compute ACFs for all interferometers in :attr:`Network.attr_name`."""
+=======
+        """Compute ACFs with data named `attr_name`.
+
+        Parameters
+        ----------
+        attr_name : string
+            Name of data for ACF estimation
+        """
+>>>>>>> 3dfc72b2e90d582c894859287b1ddaa96a881bef
         noisy_data = getattr(self, attr_name)
         if self.acfs:
             warnings.warn("Overwriting ACFs")
         for ifo, data in noisy_data.items():
-            self.acfs[ifo] = data.get_acf(**kws)
+            self.acfs[ifo] = data.data_acf(**kws)
 
     def cholesky_decomposition(self):
         """Compute the Cholesky-decomposition of covariance matrix :math:`C = L^TL`,
@@ -241,7 +259,7 @@ class Network(object):
         Returns
         -------
         likelihood : float
-            The likelihood of the interferometer network
+            The likelihood of interferometer network
         """
         likelihood = 0
 
@@ -267,7 +285,7 @@ class Network(object):
             self.filtered_data[ifo] = Data(ifft, index=data.index, ifo=ifo)
 
     def likelihood_vs_mass_spin(self, M_est, chi_est, **kwargs) -> float:
-        """Compute likelihood for the given mass and spin
+        """Compute likelihood for the given mass and spin.
         
         Parameters
         ----------
@@ -285,7 +303,7 @@ class Network(object):
         return self.compute_likelihood(apply_filter=True)
 
     def compute_SNR(self, data, template, ifo, optimal) -> float:
-        """Compute matched-filter/optimal SNR
+        """Compute matched-filter/optimal SNR.
 
         Parameters
         ----------

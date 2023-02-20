@@ -19,7 +19,7 @@ class Filter:
         remnant dimensionless spin.
     mass : float
         remnant mass, in solar mass.
-    model_list : a list of tuples
+    model_list : a list of dictionaries
         quasinormal modes to be filtered.
     """
 
@@ -105,19 +105,19 @@ class Data(pd.Series):
         return self.index.values
 
     @property
-    def delta_t(self) -> float:
-        """Sampling time interval."""
+    def time_interval(self) -> float:
+        """Interval of the time stamps."""
         return self.index[1] - self.index[0]
 
     @property
-    def fsamp(self) -> float:
-        """Sampling rate (frequency)."""
-        return 1/self.delta_t
+    def fft_span(self) -> float:
+        """Span of FFT."""
+        return 1./self.time_interval
 
     @property
     def fft_freq(self):
         """FFT angular frequency stamps."""
-        return np.fft.rfftfreq(len(self), d=self.delta_t) * 2 * np.pi
+        return np.fft.rfftfreq(len(self), d=self.time_interval) * 2 * np.pi
     
     @property
     def fft_data(self):
@@ -128,6 +128,8 @@ class Data(pd.Series):
                   remove_mean=True, **kwargs):
         """Condition data.
 
+        Credit: This function is from `git@github.com:maxisi/ringdown.git`.
+        
         Arguments
         ---------
         flow : float
@@ -155,7 +157,7 @@ class Data(pd.Series):
         raw_data = self.values
         raw_time = self.index.values
 
-        ds = int(round(self.fsamp/srate))
+        ds = int(round(self.fft_span/srate))
 
         if t0 is not None:
             ds = int(ds or 1)
@@ -163,7 +165,7 @@ class Data(pd.Series):
             raw_time = np.roll(raw_time, -(i % ds))
             raw_data = np.roll(raw_data, -(i % ds))
 
-        fny = 0.5/self.delta_t
+        fny = 0.5 * self.fft_span
         # Filter
         if flow and not fhigh:
             b, a = ss.butter(4, flow/fny, btype='highpass', output='ba')
@@ -194,11 +196,11 @@ class Data(pd.Series):
 
         return Data(cond_data, index=cond_time, ifo=self.ifo)
 
-    def get_acf(self, **kws):
+    def data_acf(self, **kws):
         """Estimate ACFs from time domain data using Welch's method."""
-        dt = self.delta_t
-        fs = 1/dt
+        dt = self.time_interval
+        fs = self.fft_span
 
         freq, psd = ss.welch(self.values, fs=fs, nperseg=fs)
-        rho = 0.5*np.fft.irfft(psd) / self.delta_t
+        rho = 0.5*np.fft.irfft(psd) * fs
         return Data(rho, index=np.arange(len(rho))*dt)
