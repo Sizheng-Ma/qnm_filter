@@ -146,6 +146,7 @@ class Network(object):
     def first_index(self) -> dict:
         """Find the index of a data point that is closet to the choosen
         start time :attr:`Network.start_times` for each interferometer.
+        
         Returns
         -------
         i0_dict : dictionary
@@ -161,6 +162,7 @@ class Network(object):
     def sampling_n(self) -> int:
         """Number of data points in analysis window.
         Should be the same for all interferometers.
+        
         Returns
         -------
         Length of truncated data array
