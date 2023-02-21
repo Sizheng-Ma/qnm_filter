@@ -168,13 +168,8 @@ class Network(object):
         Length of truncated data array
         """
         n_dict = {}
-<<<<<<< HEAD
-        for ifo, data in self.conditioned_data.items():
-            n_dict[ifo] = int(round(self.window_width/data.delta_t))
-=======
-        for ifo, data in self.original_data.items():
+        for ifo, data in self.time_data.items():
             n_dict[ifo] = int(round(self.window_width/data.time_interval))
->>>>>>> 3dfc72b2e90d582c894859287b1ddaa96a881bef
         if len(set(n_dict.values())) > 1:
             raise ValueError("Detectors have different sampling rates")
 
@@ -215,9 +210,6 @@ class Network(object):
             self.conditioned_data[ifo] = data.condition(t0=t0, **kwargs)
 
     def compute_acfs(self, attr_name, **kws):
-<<<<<<< HEAD
-        """Compute ACFs for all interferometers in :attr:`Network.attr_name`."""
-=======
         """Compute ACFs with data named `attr_name`.
 
         Parameters
@@ -225,7 +217,6 @@ class Network(object):
         attr_name : string
             Name of data for ACF estimation
         """
->>>>>>> 3dfc72b2e90d582c894859287b1ddaa96a881bef
         noisy_data = getattr(self, attr_name)
         if self.acfs:
             warnings.warn("Overwriting ACFs")
