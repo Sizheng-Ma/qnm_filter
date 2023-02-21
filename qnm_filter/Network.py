@@ -63,7 +63,7 @@ class Network(object):
         width of analysis window
     """
 
-    def __init__(self, **kws):
+    def __init__(self, **kws) -> None:
         """Constructor"""
         self.original_data = {}
         self.conditioned_data = {}
@@ -78,7 +78,7 @@ class Network(object):
         self.t_init = kws.get('t_init', None)
         self.window_width = kws.get('window_width', None)
 
-    def import_ligo_data(self, filename):
+    def import_ligo_data(self, filename) -> None:
         """Read data from disk and store data in :attr:`Network.original_data`.
 
         Supports only HDF5 files downloaded from https://www.gw-openscience.org.
@@ -100,7 +100,7 @@ class Network(object):
 
             self.original_data[ifo] = Data(h, index=time, ifo=ifo)
     
-    def import_data_array(self, attr_name, data, time, ifo):
+    def import_data_array(self, attr_name, data, time, ifo) -> None:
         """Add the inputted data to a dynamic/existing attribute.
 
         Parameters
@@ -116,7 +116,7 @@ class Network(object):
         """
         getattr(self, attr_name)[ifo] = Data(data, index=time, ifo=ifo)
 
-    def detector_alignment(self, **kwargs):
+    def detector_alignment(self, **kwargs) -> None:
         """Set the start times of analysis window at different
         interferometers :attr:`Network.start_times` using sky location.
 
@@ -159,7 +159,7 @@ class Network(object):
         return i0_dict
 
     @property
-    def sampling_n(self):
+    def sampling_n(self) -> int:
         """Number of data points in analysis window.
         Should be the same for all interferometers.
         
@@ -168,7 +168,7 @@ class Network(object):
         Length of truncated data array
         """
         n_dict = {}
-        for ifo, data in self.time_data.items():
+        for ifo, data in self.conditioned_data.items():
             n_dict[ifo] = int(round(self.window_width/data.time_interval))
         if len(set(n_dict.values())) > 1:
             raise ValueError("Detectors have different sampling rates")
@@ -196,7 +196,7 @@ class Network(object):
             data[i] = Data(d.iloc[i0s[i]:i0s[i] + self.sampling_n])
         return data
 
-    def condition_data(self, attr_name, **kwargs):
+    def condition_data(self, attr_name, **kwargs) -> None:
         """Condition data for all interferometers.
 
         Parameters
@@ -209,7 +209,8 @@ class Network(object):
             t0 = self.start_times[ifo]
             self.conditioned_data[ifo] = data.condition(t0=t0, **kwargs)
 
-    def compute_acfs(self, attr_name, **kws):
+
+    def compute_acfs(self, attr_name, **kws) -> None:
         """Compute ACFs with data named `attr_name`.
 
         Parameters
@@ -223,7 +224,7 @@ class Network(object):
         for ifo, data in noisy_data.items():
             self.acfs[ifo] = data.data_acf(**kws)
 
-    def cholesky_decomposition(self):
+    def cholesky_decomposition(self) -> None:
         """Compute the Cholesky-decomposition of covariance matrix :math:`C = L^TL`,
         and the inverse of :math:`L`.
         """
@@ -239,7 +240,7 @@ class Network(object):
             self.cholesky_L[ifo] = L
             self.inverse_cholesky_L[ifo] = L_inv
 
-    def compute_likelihood(self, apply_filter = True):
+    def compute_likelihood(self, apply_filter = True) -> float:
         """Compute likelihood for interferometer network.
 
         Arguments
