@@ -6,17 +6,17 @@ from joblib import Parallel, delayed
 import matplotlib.pyplot as pl
 import numpy as np
 
-def parallel_compute(function, M_arr, chi_arr, **kwargs):
+def parallel_compute(self, M_arr, chi_arr, **kwargs):
     """Parallel computation of a function that takes 2 arguments 
     
     Arguments
     ---------
-    function : function
-        function that takes 2 args and an arbitrary number of kwargs
+    self : Network class instance
+        An instance of a Network class that will have self.likelihood_vs_mass_spin computed
     M_arr : array-like
-        array of the values of the first arg of the function
+        array of the values of remnant mass to calculate the likelihood function for
     chi_arr : array-like
-        array of the values of the second arg of the function
+        array of the values of remnant spin to calculate the likelihood function for
     kwargs : dict
         dictionary of kwargs of the function
         
@@ -26,17 +26,29 @@ def parallel_compute(function, M_arr, chi_arr, **kwargs):
         2d array of the results with shape (len(x_arr), len(y_arr))
     """
     flatten_array = [(i,j) for i in M_arr for j in chi_arr]
-    results = Parallel(-1)(delayed(function)(i, j, **kwargs) 
+    results = Parallel(-1)(delayed(self.likelihood_vs_mass_spin)(i, j, **kwargs) 
                      for i,j in flatten_array)
     reshaped_results = np.reshape(results, (len(M_arr), len(chi_arr))).T
     return reshaped_results
 
-def plotter(X_grid, Y_grid, results, IMR_result = (np.nan, np.nan), credible_region=None, \
-            show = True, save_fig = False, fig_size = (6.1, 6.6), peak_time = 1126259462.4083147, \
-            **kwarg_dict):
-    pl.rc('figure', figsize=fig_size)
+def plotter(mass_grid, spin_grid, results, \
+            IMR_result = (np.nan, np.nan), credible_region=None,
+            **plotter_dict):
+    """Generating a contour plot of the likelihood vs mass and spin
+    
+    Arguments
+    ----------
+    mass_grid : 2d array-like
+        2d array of the mass values, generated via np.meshgrid
+    spin_grid : 2d array-like
+        2d array of the spin values, generated via np.meshgrid
+    results : 2d array-like
+        2d array of the computed likelihood values
+    
+    """
+    pl.rc('figure', figsize=plotter_dict.get("fig_size"))
     fig, ax = pl.subplots()
-    contours = ax.contourf(X_grid, Y_grid, results, 20, cmap='Spectral',
+    contours = ax.contourf(mass_grid, spin_grid, results, 20, cmap='Spectral',
                            origin='lower', alpha=1.0, linestyles='--')
     ax.scatter(x=IMR_result[0], y=IMR_result[1], s=255, marker='+', 
                c='white', linewidths=4, label='IMR')
@@ -58,11 +70,11 @@ def plotter(X_grid, Y_grid, results, IMR_result = (np.nan, np.nan), credible_reg
     pl.ylabel(r'$\chi_f$', fontsize=13)
     ax.set_box_aspect(1)
 
-    time_str = str(np.round((kwarg_dict["t_init"] - peak_time)*1e3, 2))
-    title = r'Filters = '+ str(kwarg_dict["model_list"]) + '  $\Delta t_0 = $' + time_str + " ms"
+    title = r'Filters = '+ str(plotter_dict["model_list"]) + \
+    '  $\Delta t_0 = $' + str(plotter_dict["delta_t"]*1e3) + " ms"
     ax.set_title(title);
     
-    if save_fig:
+    if plotter_dict.get("save_fig"):
         pl.savefig("Figures/"+title+".png");
-    if not show:
+    if not plotter_dict.get("show_fig"):
         pl.close()

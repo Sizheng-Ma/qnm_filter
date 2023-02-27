@@ -72,7 +72,8 @@ class Network(object):
 
         self.ra = kws.get('ra', None)
         self.dec = kws.get('dec', None)
-        self.t_init = kws.get('t_init', None)
+        self.peak_time = kws.get('peak_time', None)
+        self.delta_t = kws.get('delta_t', None)
         self.window_width = kws.get('window_width', None)
 
     def import_ligo_data(self, filename) -> None:
@@ -122,7 +123,7 @@ class Network(object):
         t_init : float
             The start time of analysis window at the geocenter.
         """
-        t_init = kwargs.pop('t_init', None)
+        t_init = self.t_init
         if t_init==None:
             raise ValueError("t_init is not provided")
         tgps = lal.LIGOTimeGPS(t_init)
@@ -139,6 +140,12 @@ class Network(object):
             if not (data.time[0] < shifted_time < data.time[-1]):
                 raise ValueError("Invalid start time for {}".format(ifo))
 
+    @property
+    def t_init(self) -> float:
+        """Calculates truncation time
+        """
+        return self.peak_time + self.delta_t
+                
     @property
     def first_index(self) -> dict:
         """Find the index of a data point that is closet to the choosen
