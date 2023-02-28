@@ -31,7 +31,7 @@ class Network(object):
         fit.import_data('H-H1_GWOSC_16KHZ_R1-1126259447-32.hdf5')
         fit.detector_alignment(**input)
         fit.condition_data('original_data', **input)
-        fit.compute_acfs('original_data')
+        fit.compute_acfs('conditioned_data')
         fit.cholesky_decomposition()
         fit.add_filter(mass=68.5, chi=0.69, **input)
         final_likelihood = fit.compute_likelihood(apply_filter=True)
@@ -40,6 +40,8 @@ class Network(object):
     ----------
     original_data : dict
         dictionary containing unfiltered data for each detector.
+    conditioned_data : dict
+        dictionary containing conditioned data for each detector.
     filtered_data : dict
         dictionary containing filtered data for each detector.
     acfs : dict
@@ -64,6 +66,7 @@ class Network(object):
     def __init__(self, **kws) -> None:
         """Constructor"""
         self.original_data = {}
+        self.conditioned_data = {}
         self.filtered_data = {}
         self.acfs = {}
         self.start_times = {}
@@ -150,7 +153,7 @@ class Network(object):
             dictionary containing the start indices for all interferometers.
         """
         i0_dict = {}
-        for ifo, data in self.original_data.items():
+        for ifo, data in self.conditioned_data.items():
             t0 = self.start_times[ifo]
             i0_dict[ifo] = abs(data.time - t0).argmin()
         return i0_dict
@@ -166,7 +169,7 @@ class Network(object):
         Length of truncated data array
         """
         n_dict = {}
-        for ifo, data in self.original_data.items():
+        for ifo, data in self.conditioned_data.items():
             n_dict[ifo] = int(round(self.window_width/data.time_interval))
         if len(set(n_dict.values())) > 1:
             raise ValueError("Detectors have different sampling rates")
@@ -203,7 +206,7 @@ class Network(object):
         unconditioned_data = getattr(self, attr_name)
         for ifo, data in unconditioned_data.items():
             t0 = self.start_times[ifo]
-            getattr(self, attr_name)[ifo] = data.condition(t0=t0, **kwargs)
+            self.conditioned_data[ifo] = data.condition(t0=t0, **kwargs)
 
     def compute_acfs(self, attr_name, **kws) -> None:
         """Compute ACFs with data named `attr_name`.
@@ -251,7 +254,7 @@ class Network(object):
         likelihood = 0
 
         if not apply_filter:
-            truncation = self.truncate_data(self.original_data)
+            truncation = self.truncate_data(self.conditioned_data)
         else:
             truncation = self.truncate_data(self.filtered_data)
 
@@ -261,9 +264,9 @@ class Network(object):
         return likelihood
 
     def add_filter(self,  **kwargs):
-        """Apply rational filters to :attr:`Network.original_data` and store
+        """Apply rational filters to :attr:`Network.conditioned_data` and store
         the filtered data in :attr:`Network.filtered_data`."""
-        for ifo, data in self.original_data.items():
+        for ifo, data in self.conditioned_data.items():
             data_in_freq = data.fft_data
             freq = data.fft_freq
             filter_in_freq = Filter(**kwargs).total_filter(freq)
