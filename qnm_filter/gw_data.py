@@ -196,11 +196,19 @@ class Data(pd.Series):
 
         return Data(cond_data, index=cond_time, ifo=self.ifo)
 
+    def data_psd(self, **kws):
+        """Estimate PSDs from data using Welch's method."""
+        fs = self.fft_span
+        nperseg = fs/kws.get('sampling_rate', 1)
+
+        freq, psd = ss.welch(self.values, fs=fs, nperseg=nperseg)
+        return Data(psd, index=freq)
+
     def data_acf(self, **kws):
-        """Estimate ACFs from time domain data using Welch's method."""
+        """Estimate ACFs from data using Welch's method."""
         dt = self.time_interval
         fs = self.fft_span
 
-        freq, psd = ss.welch(self.values, fs=fs, nperseg=fs)
-        rho = 0.5*np.fft.irfft(psd) * fs
+        psd = self.data_psd(**kws)
+        rho = 0.5 * np.fft.irfft(psd) * fs
         return Data(rho, index=np.arange(len(rho))*dt)
