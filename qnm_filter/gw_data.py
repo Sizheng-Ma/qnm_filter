@@ -29,8 +29,9 @@ class Filter:
         self.mass = mass # in solar mass
 
         self.model_list = []
-        for (l, m, n) in model_list:
-            self.model_list.append(dict(l = l, m = m, n = n))
+        if model_list != None:
+            for (l, m, n) in model_list:
+                self.model_list.append(dict(l = l, m = m, n = n))
 
     @property
     def get_spin(self) -> float:
@@ -52,6 +53,13 @@ class Filter:
         """Convert mass unit from solar mass to second."""
         return mass * T_MSUN
 
+    def pos_filter(self, normalized_freq, l, m, n):
+        omega = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
+        return (normalized_freq-omega)/(normalized_freq-np.conj(omega))
+ 
+    def neg_filter(self, normalized_freq, l, m, n):
+        omega = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
+        return (normalized_freq+np.conj(omega))/(normalized_freq+omega)
 
     def single_filter(self, normalized_freq, l, m, n):
         """Compute rational filters. 
@@ -62,8 +70,8 @@ class Filter:
             in remnant mass, frequencies that rational filters are evaluated at.
         """
         omega = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
-        return (normalized_freq-omega)/(normalized_freq-np.conj(omega))\
-                *(normalized_freq+np.conj(omega))/(normalized_freq+omega)
+        final_filter = self.pos_filter(normalized_freq, l, m, n) * self.neg_filter(normalized_freq, l, m, n)
+        return final_filter
     
     def total_filter(self, freq):
         """The total rational filter that removes the modes stored in :attr:`Filter.model_list`.
