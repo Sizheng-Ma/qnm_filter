@@ -73,6 +73,20 @@ class Filter:
         final_filter = self.pos_filter(normalized_freq, l, m, n) * self.neg_filter(normalized_freq, l, m, n)
         return final_filter
     
+    def NR_filter(self, freq):
+        final_rational_filter = 1
+        if not bool(self.model_list):
+            return final_rational_filter
+        else:
+            if (self.mass is None) or (self.chi is None):
+                raise ValueError(f"Mass = {self.mass}"
+                                 f" and Spin = {self.chi} are needed")
+        normalized_freq = freq * self.mass
+        for mode in self.model_list:
+            final_rational_filter *= self.pos_filter(normalized_freq,\
+                                     mode["l"], mode["m"], mode["n"])
+        return final_rational_filter
+    
     def total_filter(self, freq):
         """The total rational filter that removes the modes stored in :attr:`Filter.model_list`.
 
@@ -131,6 +145,16 @@ class Data(pd.Series):
     def fft_data(self):
         """FFT of gravitational-wave data."""
         return np.fft.rfft(self.values, norm='ortho')
+
+    @property
+    def complex_fft_freq(self):
+        """TODO FFT angular frequency stamps."""
+        return np.fft.fftfreq(len(self), d=self.time_interval) * 2 * np.pi
+
+    @property
+    def complex_fft_data(self):
+        """TODO FFT of gravitational-wave data."""
+        return np.fft.ifft(self.values, norm='ortho')
 
     def condition(self, t0=None, srate=None, flow=None, fhigh=None, trim=0.25,
                   remove_mean=True, **kwargs):

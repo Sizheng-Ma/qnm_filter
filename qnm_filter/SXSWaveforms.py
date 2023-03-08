@@ -13,6 +13,7 @@ class SXSWaveforms():
     def __init__(self, **kws) -> None:
         self.original_data = {}
         self.padded_data = {}
+        self.filtered_data = {}
 
         self.filename = kws.get('filename', None)
         self.mf = None
@@ -65,7 +66,7 @@ class SXSWaveforms():
             data_pad = np.pad(data.values, (padlen//partition,padlen-(padlen//partition)),\
                               'constant', constant_values=(0, 0))
 
-            delta_t = data.index[1] - data.index[0]
+            delta_t = data.time_interval
             end1 = data.index[-1] + (padlen-(padlen//partition)) * delta_t
             end2 = data.index[0] - (padlen//partition) * delta_t
 
@@ -73,3 +74,11 @@ class SXSWaveforms():
                         'linear_ramp', end_values=(end2, end1))
             self.padded_data[lm] = Data(data_pad, index=tpad)
 
+    def add_filter(self, model_list):
+        for lm, data in self.padded_data.items():
+            data_in_freq = data.complex_fft_data
+            freq = data.complex_fft_freq
+            filter_in_freq = Filter(chi=self.chif, mass=self.mf, model_list=model_list).NR_filter(freq)
+            data_in_time = np.fft.fft(filter_in_freq*data_in_freq,\
+                                                norm='ortho')
+            self.filtered_data[lm] = Data(data_in_time, index=data.index)
