@@ -10,6 +10,7 @@ import scipy.signal as ss
 
 T_MSUN = c.M_sun.value * c.G.value / c.c.value**3
 
+
 class Filter:
     """Container for rational filters.
 
@@ -26,27 +27,30 @@ class Filter:
     def __init__(self, chi=None, mass=None, model_list=None):
         """Constructor"""
         self.chi = chi
-        self.mass = mass # in solar mass
+        self.mass = mass  # in solar mass
 
         self.model_list = []
+        self.freq_list = {}
         if model_list != None:
             for (l, m, n) in model_list:
-                self.model_list.append(dict(l = l, m = m, n = n))
+                self.model_list.append(dict(l=l, m=m, n=n))
+                self.freq_list[str(
+                    l)+str(m)+str(n)] = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
 
     @property
     def get_spin(self) -> float:
         """Return :attr:`Filter.chi`."""
-        return self.chi   
+        return self.chi
 
     @property
     def get_mass(self) -> float:
         """Return :attr:`Filter.mass`."""
-        return self.mass   
-    
+        return self.mass
+
     @property
     def get_model_list(self) -> list[dict]:
         """Return :attr:`Filter.model_list`."""
-        return self.model_list  
+        return self.model_list
 
     @staticmethod
     def mass_unit(mass) -> float:
@@ -56,7 +60,7 @@ class Filter:
     def pos_filter(self, normalized_freq, l, m, n):
         omega = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
         return (normalized_freq-omega)/(normalized_freq-np.conj(omega))
- 
+
     def neg_filter(self, normalized_freq, l, m, n):
         omega = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
         return (normalized_freq+np.conj(omega))/(normalized_freq+omega)
@@ -70,9 +74,10 @@ class Filter:
             in remnant mass, frequencies that rational filters are evaluated at.
         """
         omega = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
-        final_filter = self.pos_filter(normalized_freq, l, m, n) * self.neg_filter(normalized_freq, l, m, n)
+        final_filter = self.pos_filter(
+            normalized_freq, l, m, n) * self.neg_filter(normalized_freq, l, m, n)
         return final_filter
-    
+
     def NR_filter(self, freq):
         final_rational_filter = 1
         if not bool(self.model_list):
@@ -83,10 +88,10 @@ class Filter:
                                  f" and Spin = {self.chi} are needed")
         normalized_freq = freq * self.mass
         for mode in self.model_list:
-            final_rational_filter *= self.pos_filter(normalized_freq,\
-                                     mode["l"], mode["m"], mode["n"])
+            final_rational_filter *= self.pos_filter(normalized_freq,
+                                                     mode["l"], mode["m"], mode["n"])
         return final_rational_filter
-    
+
     def total_filter(self, freq):
         """The total rational filter that removes the modes stored in :attr:`Filter.model_list`.
 
@@ -104,9 +109,10 @@ class Filter:
                                  f" and Spin = {self.chi} are needed")
         normalized_freq = freq * self.mass * T_MSUN
         for mode in self.model_list:
-            final_rational_filter *= self.single_filter(-normalized_freq,\
-                                     mode["l"], mode["m"], mode["n"])
+            final_rational_filter *= self.single_filter(-normalized_freq,
+                                                        mode["l"], mode["m"], mode["n"])
         return final_rational_filter
+
 
 class Data(pd.Series):
     """Container for gravitational data.
@@ -140,7 +146,7 @@ class Data(pd.Series):
     def fft_freq(self):
         """FFT angular frequency stamps."""
         return np.fft.rfftfreq(len(self), d=self.time_interval) * 2 * np.pi
-    
+
     @property
     def fft_data(self):
         """FFT of gravitational-wave data."""
@@ -156,12 +162,16 @@ class Data(pd.Series):
         """TODO FFT of gravitational-wave data."""
         return np.fft.ifft(self.values, norm='ortho')
 
+    def truncate_data(self, **kwargs):
+        truncated_waveform = self.truncate(**kwargs)
+        return Data(truncated_waveform.values, index=truncated_waveform.index, ifo=self.ifo)
+
     def condition(self, t0=None, srate=None, flow=None, fhigh=None, trim=0.25,
                   remove_mean=True, **kwargs):
         """Condition data.
 
         Credit: This function is from `git@github.com:maxisi/ringdown.git`.
-        
+
         Arguments
         ---------
         flow : float
@@ -205,7 +215,7 @@ class Data(pd.Series):
             b, a = ss.butter(4, fhigh/fny, btype='lowpass', output='ba')
         elif flow and fhigh:
             b, a = ss.butter(4, (flow/fny, fhigh/fny), btype='bandpass',
-                              output='ba')
+                             output='ba')
 
         if flow or fhigh:
             cond_data = ss.filtfilt(b, a, raw_data)
