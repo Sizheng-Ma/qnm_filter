@@ -155,8 +155,6 @@ class Data(pd.Series):
             higher frequency for low passing.
         srate : int
             sampling frequency after downsampling.
-        t0 : float
-            target time to be preserved after downsampling.
         remove_mean : bool
             explicitly remove mean from time series after conditioning.
         trim : float
@@ -197,6 +195,7 @@ class Data(pd.Series):
             cond_data = ss.filtfilt(b, a, raw_data)
         else:
             cond_data = raw_data
+            cond_time = raw_time
 
         if ds and ds > 1:
             cond_data = ss.decimate(cond_data, ds, zero_phase=True)

@@ -4,11 +4,14 @@
 __all__ = ["Network"]
 
 from .gw_data import *
+from .utility import *
 import h5py
 import lal
 import numpy as np
 import scipy.linalg as sl
 import warnings
+from scipy.special import logsumexp
+
 
 
 class Network(object):
@@ -65,6 +68,7 @@ class Network(object):
     def __init__(self, **kws) -> None:
         """Constructor"""
         self.original_data = {}
+        self.conditioned_data = {}
         self.filtered_data = {}
         self.acfs = {}
         self.start_times = {}
@@ -137,7 +141,7 @@ class Network(object):
             self.start_times[ifo] = shifted_time
             if not (data.time[0] < shifted_time < data.time[-1]):
                 raise ValueError("Invalid start time for {}".format(ifo))
-
+    
     @property
     def first_index(self) -> dict:
         """Find the index of a data point that is closet to the choosen
@@ -149,11 +153,11 @@ class Network(object):
             dictionary containing the start indices for all interferometers.
         """
         i0_dict = {}
-        for ifo, data in self.original_data.items():
+        for ifo, data in self.conditioned_data.items():
             t0 = self.start_times[ifo]
             i0_dict[ifo] = abs(data.time - t0).argmin()
         return i0_dict
-
+    
     @property
     def sampling_n(self) -> int:
         """Number of data points in analysis window.
@@ -165,13 +169,13 @@ class Network(object):
         Length of truncated data array
         """
         n_dict = {}
-        for ifo, data in self.original_data.items():
+        for ifo, data in self.conditioned_data.items():
             n_dict[ifo] = int(round(self.window_width / data.time_interval))
         if len(set(n_dict.values())) > 1:
             raise ValueError("Detectors have different sampling rates")
 
         return list(n_dict.values())[0]
-
+    
     def truncate_data(self, network_data) -> dict:
         """Select segments of the given data that are in analysis window.
 
@@ -190,8 +194,8 @@ class Network(object):
         for i, d in network_data.items():
             data[i] = Data(d.iloc[i0s[i] : i0s[i] + self.sampling_n])
         return data
-
-    def condition_data(self, attr_name, **kwargs) -> None:
+            
+    def condition_data(self, attr_name, trim=0.0, **kwargs) -> None:
         """Condition data for all interferometers.
 
         Parameters
@@ -201,8 +205,30 @@ class Network(object):
         """
         unconditioned_data = getattr(self, attr_name)
         for ifo, data in unconditioned_data.items():
+            self.conditioned_data[ifo] = data.condition(trim = trim, **kwargs)
+            
+    def roll_condition(self, attr_name, trim=0.0, **kwargs) -> None:
+        """Condition data for all interferometers.
+
+        Parameters
+        ----------
+        attr_name : string
+            Name of data to be conditioned
+        """
+        unconditioned_data = getattr(self, attr_name)
+        
+        for ifo, data in unconditioned_data.items():
+            fft_span = data.fft_span
+            srate = kwargs.get('srate', None)
             t0 = self.start_times[ifo]
-            getattr(self, attr_name)[ifo] = data.condition(t0=t0, **kwargs)
+            
+            ds = int(round(fft_span/srate))
+            i = np.argmin(abs(data.index.values - t0))
+            
+            rolled_time = np.roll(data.index.values, -(i % ds))
+            rolled_data = np.roll(data.values, -(i % ds))
+            self.conditioned_data[ifo] = Data(rolled_data, index=rolled_time, ifo=ifo)
+        self.condition_data('conditioned_data', trim=trim, **kwargs)
 
     def compute_acfs(self, attr_name, **kws) -> None:
         """Compute ACFs with data named `attr_name`.
@@ -253,7 +279,7 @@ class Network(object):
         likelihood = 0
 
         if not apply_filter:
-            truncation = self.truncate_data(self.original_data)
+            truncation = self.truncate_data(self.conditioned_data)
         else:
             truncation = self.truncate_data(self.filtered_data)
 
@@ -265,7 +291,7 @@ class Network(object):
     def add_filter(self, **kwargs):
         """Apply rational filters to :attr:`Network.original_data` and store
         the filtered data in :attr:`Network.filtered_data`."""
-        for ifo, data in self.original_data.items():
+        for ifo, data in self.conditioned_data.items():
             data_in_freq = data.fft_data
             freq = data.fft_freq
             filter_in_freq = Filter(**kwargs).total_filter(freq)
@@ -291,8 +317,20 @@ class Network(object):
         model_list = kwargs.pop("model_list")
         self.add_filter(mass=M_est, chi=chi_est, model_list=model_list)
         return self.compute_likelihood(apply_filter=True)
+    
 
-    def compute_SNR(self, data, template, ifo, optimal) -> float:
+    def t_init_evidence(self, new_t, massspace, chispace, num_cpu = -1, **kwargs) -> float:
+        """ Calculates evidence for a given value of t_init (ms afer t0)
+        """
+        kwargs["t_init"] = new_t
+        self.detector_alignment(**kwargs)
+        self.roll_condition('original_data', **kwargs)
+        likelihood_data = parallel_compute(self, massspace, chispace, num_cpu = num_cpu, **kwargs)
+        evidence = logsumexp(likelihood_data, axis = (0,1))
+        return evidence
+        
+    
+    def compute_SNR(self, data, template, ifo, optimal=False) -> float:
         """Compute matched-filter/optimal SNR.
 
         Parameters
