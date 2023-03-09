@@ -77,6 +77,21 @@ class SXSWaveforms():
             tpad = np.pad(data.index, (padlen//partition, padlen-(padlen//partition)),
                           'linear_ramp', end_values=(end2, end1))
             self.padded_data[lm] = Data(data_pad, index=tpad)
+            
+    @staticmethod
+    def pad_data2(original_data, partition) -> None:
+        for lm, data in original_data.items():
+            padlen = 2**(2+int(np.ceil(np.log2(len(data)))))-len(data)
+            data_pad = np.pad(data.values, (padlen//partition, padlen-(padlen//partition)),
+                              'constant', constant_values=(0, 0))
+
+            delta_t = data.time_interval
+            end1 = data.index[-1] + (padlen-(padlen//partition)) * delta_t
+            end2 = data.index[0] - (padlen//partition) * delta_t
+
+            tpad = np.pad(data.index, (padlen//partition, padlen-(padlen//partition)),
+                          'linear_ramp', end_values=(end2, end1))
+            return Data(data_pad, index=tpad)
 
     def add_filter(self, model_list):
         for lm, data in self.padded_data.items():
