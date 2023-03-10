@@ -64,34 +64,29 @@ class SXSWaveforms():
         self.mf = metadata['remnant_mass']
         self.chif = metadata['remnant_dimensionless_spin'][-1]
 
-    def pad_data(self, partition) -> None:
+    def pad_data(self, partition, len_pow) -> None:
         for lm, data in self.original_data.items():
-            padlen = 2**(2+int(np.ceil(np.log2(len(data)))))-len(data)
-            data_pad = np.pad(data.values, (padlen//partition, padlen-(padlen//partition)),
-                              'constant', constant_values=(0, 0))
-
-            delta_t = data.time_interval
-            end1 = data.index[-1] + (padlen-(padlen//partition)) * delta_t
-            end2 = data.index[0] - (padlen//partition) * delta_t
-
-            tpad = np.pad(data.index, (padlen//partition, padlen-(padlen//partition)),
-                          'linear_ramp', end_values=(end2, end1))
-            self.padded_data[lm] = Data(data_pad, index=tpad)
+            self.padded_data[lm] = self.pad_data2(data, partition, len_pow)
             
     @staticmethod
-    def pad_data2(original_data, partition) -> None:
-        for lm, data in original_data.items():
-            padlen = 2**(2+int(np.ceil(np.log2(len(data)))))-len(data)
-            data_pad = np.pad(data.values, (padlen//partition, padlen-(padlen//partition)),
-                              'constant', constant_values=(0, 0))
+    def pad_data2(data, partition, len_pow) -> None:
+        padlen = 2**(len_pow+int(np.ceil(np.log2(len(data)))))-len(data)
+        data_pad = np.pad(data.values, (padlen//partition, padlen-(padlen//partition)),
+                            'constant', constant_values=(0, 0))
 
-            delta_t = data.time_interval
-            end1 = data.index[-1] + (padlen-(padlen//partition)) * delta_t
-            end2 = data.index[0] - (padlen//partition) * delta_t
+        delta_t = data.time_interval
+        end1 = data.index[-1] + (padlen-(padlen//partition)) * delta_t
+        end2 = data.index[0] - (padlen//partition) * delta_t
 
-            tpad = np.pad(data.index, (padlen//partition, padlen-(padlen//partition)),
-                          'linear_ramp', end_values=(end2, end1))
-            return Data(data_pad, index=tpad)
+        tpad = np.pad(data.index, (padlen//partition, padlen-(padlen//partition)),
+                        'linear_ramp', end_values=(end2, end1))
+        return Data(data_pad, index=tpad)
+
+    @staticmethod
+    def trunc_pad(data, before, after, partition, len_pow):
+        truncated_data = data.truncate_data(before=before, after=after)
+        return SXSWaveforms.pad_data2(truncated_data, partition, len_pow)
+        
 
     def add_filter(self, model_list):
         for lm, data in self.padded_data.items():
