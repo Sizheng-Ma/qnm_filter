@@ -152,15 +152,21 @@ class Data(pd.Series):
         """FFT of gravitational-wave data."""
         return np.fft.rfft(self.values, norm='ortho')
 
-    @property
-    def complex_fft_freq(self):
+    def complex_fft_freq(self, fftshift):
         """TODO FFT angular frequency stamps."""
-        return np.fft.fftfreq(len(self), d=self.time_interval) * 2 * np.pi
+        fft_freq = np.fft.fftfreq(len(self), d=self.time_interval) * 2 * np.pi
+        if fftshift:
+            return np.fft.fftshift(fft_freq)
+        else:
+            return fft_freq
 
-    @property
-    def complex_fft_data(self):
+    def complex_fft_data(self, fftshift):
         """TODO FFT of gravitational-wave data."""
-        return np.fft.ifft(self.values, norm='ortho')
+        fft_data = np.fft.ifft(self.values, norm='ortho')
+        if fftshift:
+            return np.fft.fftshift(fft_data)
+        else:
+            return fft_data
 
     def truncate_data(self, **kwargs):
         truncated_waveform = self.truncate(**kwargs)

@@ -95,8 +95,8 @@ class SXSWaveforms():
 
     def add_filter(self, model_list):
         for lm, data in self.padded_data.items():
-            data_in_freq = data.complex_fft_data
-            freq = data.complex_fft_freq
+            data_in_freq = data.complex_fft_data(False)
+            freq = data.complex_fft_freq(False)
             filter_in_freq = Filter(
                 chi=self.chif, mass=self.mf, model_list=model_list).NR_filter(freq)
             data_in_time = np.fft.fft(filter_in_freq*data_in_freq,
