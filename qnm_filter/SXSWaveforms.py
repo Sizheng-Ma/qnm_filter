@@ -88,7 +88,7 @@ class SXSWaveforms():
         return SXSWaveforms.pad_data2(truncated_data, partition, len_pow)
         
 
-    def add_filter(self, model_list):
+    def add_filter(self, attr_name, model_list):
         for lm, data in self.padded_data.items():
             data_in_freq = data.complex_fft_data(False)
             freq = data.complex_fft_freq(False)
@@ -96,4 +96,4 @@ class SXSWaveforms():
                 chi=self.chif, mass=self.mf, model_list=model_list).NR_filter(freq)
             data_in_time = np.fft.fft(filter_in_freq*data_in_freq,
                                       norm='ortho')
-            self.filtered_data[lm] = Data(data_in_time, index=data.index)
+            self.filtered_data[attr_name+lm] = Data(data_in_time, index=data.index)
