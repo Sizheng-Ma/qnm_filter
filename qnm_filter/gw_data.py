@@ -88,8 +88,12 @@ class Filter:
                                  f" and Spin = {self.chi} are needed")
         normalized_freq = freq * self.mass
         for mode in self.model_list:
-            final_rational_filter *= self.pos_filter(normalized_freq,
-                                                     mode["l"], mode["m"], mode["n"])
+            if mode["m"]>0:
+                final_rational_filter *= self.pos_filter(normalized_freq,
+                                                        mode["l"], mode["m"], mode["n"])
+            else:
+                final_rational_filter *= self.neg_filter(normalized_freq,
+                                                        mode["l"], mode["m"], mode["n"])
         return final_rational_filter
 
     def total_filter(self, freq):
