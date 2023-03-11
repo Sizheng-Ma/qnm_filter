@@ -62,7 +62,8 @@ class SXSWaveforms():
         if self.chif != None:
             warnings.warn("Overwriting chif: {}".format(self.chif))
         self.mf = metadata['remnant_mass']
-        self.chif = metadata['remnant_dimensionless_spin'][-1]
+        spinvec = metadata['remnant_dimensionless_spin']
+        self.chif = np.sqrt(np.sum(np.array(spinvec)**2))
 
     def pad_data(self, partition, len_pow) -> None:
         for lm, data in self.original_data.items():
