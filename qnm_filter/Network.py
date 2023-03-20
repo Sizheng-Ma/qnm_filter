@@ -1,7 +1,7 @@
 """Defining the core :class:`Network` class.
 """
 
-__all__ = ['Network']
+__all__ = ["Network"]
 
 from .gw_data import *
 import h5py
@@ -10,8 +10,9 @@ import numpy as np
 import scipy.linalg as sl
 import warnings
 
+
 class Network(object):
-    """ Perform a ringdown filter analysis. Stores all the needed information.
+    """Perform a ringdown filter analysis. Stores all the needed information.
 
     Example usage::
 
@@ -70,10 +71,10 @@ class Network(object):
         self.cholesky_L = {}
         self.inverse_cholesky_L = {}
 
-        self.ra = kws.get('ra', None)
-        self.dec = kws.get('dec', None)
-        self.t_init = kws.get('t_init', None)
-        self.window_width = kws.get('window_width', None)
+        self.ra = kws.get("ra", None)
+        self.dec = kws.get("dec", None)
+        self.t_init = kws.get("t_init", None)
+        self.window_width = kws.get("window_width", None)
 
     def import_ligo_data(self, filename) -> None:
         """Read data from disk and store data in :attr:`Network.original_data`.
@@ -86,17 +87,16 @@ class Network(object):
             name of file
         """
 
-        with h5py.File(filename, 'r') as f:
-            h = f['strain/Strain'][:]
-            t_start = f['meta/GPSstart'][()]
-            duration = f['meta/Duration'][()]
-            ifo = str(f['meta/Detector'][()], 'utf-8')
+        with h5py.File(filename, "r") as f:
+            h = f["strain/Strain"][:]
+            t_start = f["meta/GPSstart"][()]
+            duration = f["meta/Duration"][()]
+            ifo = str(f["meta/Detector"][()], "utf-8")
 
-            time = np.linspace(t_start, t_start+duration,\
-                               num=len(h), endpoint=False)
+            time = np.linspace(t_start, t_start + duration, num=len(h), endpoint=False)
 
             self.original_data[ifo] = Data(h, index=time, ifo=ifo)
-    
+
     def import_data_array(self, attr_name, data, time, ifo) -> None:
         """Add the inputted data to a dynamic/existing attribute.
 
@@ -122,20 +122,19 @@ class Network(object):
         t_init : float
             The start time of analysis window at the geocenter.
         """
-        t_init = kwargs.pop('t_init', None)
-        if t_init==None:
+        t_init = kwargs.pop("t_init", None)
+        if t_init == None:
             raise ValueError("t_init is not provided")
         tgps = lal.LIGOTimeGPS(t_init)
 
         for ifo, data in self.original_data.items():
-            if self.ra==None or self.dec==None:
-                self.start_times[ifo] = t_init
+            if self.ra == None or self.dec == None:
+                shifted_time = t_init
             else:
                 location = lal.cached_detector_by_prefix[ifo].location
-                dt_ifo = lal.TimeDelayFromEarthCenter(location,\
-                                                self.ra, self.dec, tgps)
+                dt_ifo = lal.TimeDelayFromEarthCenter(location, self.ra, self.dec, tgps)
                 shifted_time = t_init + dt_ifo
-                self.start_times[ifo] = shifted_time
+            self.start_times[ifo] = shifted_time
             if not (data.time[0] < shifted_time < data.time[-1]):
                 raise ValueError("Invalid start time for {}".format(ifo))
 
@@ -167,7 +166,7 @@ class Network(object):
         """
         n_dict = {}
         for ifo, data in self.original_data.items():
-            n_dict[ifo] = int(round(self.window_width/data.time_interval))
+            n_dict[ifo] = int(round(self.window_width / data.time_interval))
         if len(set(n_dict.values())) > 1:
             raise ValueError("Detectors have different sampling rates")
 
@@ -189,7 +188,7 @@ class Network(object):
         data = {}
         i0s = self.first_index
         for i, d in network_data.items():
-            data[i] = Data(d.iloc[i0s[i]:i0s[i] + self.sampling_n])
+            data[i] = Data(d.iloc[i0s[i] : i0s[i] + self.sampling_n])
         return data
 
     def condition_data(self, attr_name, **kwargs) -> None:
@@ -224,18 +223,17 @@ class Network(object):
         and the inverse of :math:`L`.
         """
         for ifo, acf in self.acfs.items():
-            truncated_acf = acf.iloc[:self.sampling_n].values
+            truncated_acf = acf.iloc[: self.sampling_n].values
             L = np.linalg.cholesky(sl.toeplitz(truncated_acf))
             L_inv = np.linalg.inv(L)
-            norm = np.sqrt(np.sum(abs(np.dot(L_inv,L)
-                                  -np.identity(len(L)))**2))
-            if abs(norm)>1e-8:
+            norm = np.sqrt(np.sum(abs(np.dot(L_inv, L) - np.identity(len(L))) ** 2))
+            if abs(norm) > 1e-8:
                 raise ValueError("Inverse of L is not correct")
 
             self.cholesky_L[ifo] = L
             self.inverse_cholesky_L[ifo] = L_inv
 
-    def compute_likelihood(self, apply_filter = True) -> float:
+    def compute_likelihood(self, apply_filter=True) -> float:
         """Compute likelihood for interferometer network.
 
         Arguments
@@ -257,23 +255,24 @@ class Network(object):
 
         for ifo, data in truncation.items():
             wd = np.dot(self.inverse_cholesky_L[ifo], data)
-            likelihood -= 0.5*np.dot(wd, wd)
+            likelihood -= 0.5 * np.dot(wd, wd)
         return likelihood
 
-    def add_filter(self,  **kwargs):
+    def add_filter(self, **kwargs):
         """Apply rational filters to :attr:`Network.original_data` and store
         the filtered data in :attr:`Network.filtered_data`."""
         for ifo, data in self.original_data.items():
             data_in_freq = data.fft_data
             freq = data.fft_freq
             filter_in_freq = Filter(**kwargs).total_filter(freq)
-            ifft = np.fft.irfft(filter_in_freq*data_in_freq,\
-                                                norm='ortho', n=len(data))
+            ifft = np.fft.irfft(
+                filter_in_freq * data_in_freq, norm="ortho", n=len(data)
+            )
             self.filtered_data[ifo] = Data(ifft, index=data.index, ifo=ifo)
 
     def likelihood_vs_mass_spin(self, M_est, chi_est, **kwargs) -> float:
         """Compute likelihood for the given mass and spin.
-        
+
         Parameters
         ----------
         M_est : float
@@ -285,7 +284,7 @@ class Network(object):
         -------
         The corresponding likelihood.
         """
-        model_list = kwargs.pop('model_list')
+        model_list = kwargs.pop("model_list")
         self.add_filter(mass=M_est, chi=chi_est, model_list=model_list)
         return self.compute_likelihood(apply_filter=True)
 
@@ -309,5 +308,5 @@ class Network(object):
         if optimal:
             return snr_opt
         else:
-            snr = np.dot(data_w, template_w)/snr_opt
+            snr = np.dot(data_w, template_w) / snr_opt
             return snr
