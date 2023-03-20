@@ -10,17 +10,19 @@ from scipy.optimize import fsolve
 from scipy.interpolate import interp1d
 
 
-def parallel_compute(self, M_arr, chi_arr, **kwargs):
-    """Parallel computation of the likelihood as a function of mass and chi
+def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
+    """Parallel computation of a function that takes 2 arguments
 
     Arguments
     ---------
     self : Network class instance
-        An instance of a Network class that will have self.likelihood_vs_mass_spin computed
+        An instance of a Network class that will have self.likelihood_vs_mass_spin computed.
     M_arr : array-like
-        array of the values of remnant mass to calculate the likelihood function for
+        array of the values of remnant mass to calculate the likelihood function for.
     chi_arr : array-like
-        array of the values of remnant spin to calculate the likelihood function for
+        array of the values of remnant spin to calculate the likelihood function for.
+    num_cpu : int
+        integer to be based to Parallel as n_jobs. NOTE: passing a positive integer leads to better performance than -1 but performance differs across machines.
     kwargs : dict
         dictionary of kwargs of the function
 
