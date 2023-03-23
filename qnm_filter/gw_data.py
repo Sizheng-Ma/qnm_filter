@@ -313,6 +313,8 @@ class Noise:
         dt = self.acf.time_interval
         freq_samp = np.fft.rfftfreq(len(self.acf), d=dt)
         psd_temp = 2 * dt * np.fft.rfft(self.acf)
+        # TODO: This could go wrong. PSD is supposed to be real. Better way?
+        psd_temp = np.real(psd_temp)
         self.psd = Data(psd_temp, index=freq_samp, ifo=self.ifo)
         self.asd = np.sqrt(self.psd)
 
