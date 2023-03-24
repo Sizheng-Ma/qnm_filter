@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import scipy.signal as ss
 import warnings
+import bilby
 
 T_MSUN = c.M_sun.value * c.G.value / c.c.value**3
 
@@ -308,3 +309,10 @@ class Noise:
 
         freq, psd = ss.welch(self.signal, fs=fs, nperseg=nperseg)
         self.psd = Data(psd, index=freq, ifo=self.ifo)
+
+    @property
+    def bilby_psd(self):
+        """Construct a Bilby `PowerSpectralDensity` instance."""
+        return bilby.gw.detector.PowerSpectralDensity(
+            frequency_array=self.psd.time, psd_array=self.psd.values
+        )
