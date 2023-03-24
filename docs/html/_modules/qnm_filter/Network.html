@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>qnm_filter.Network &mdash; QNM Filter 0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            QNM Filter
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">QNM Filter</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">qnm_filter.Network</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for qnm_filter.Network</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Defining the core :class:`Network` class.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Network&quot;</span><span class="p">]</span>
+
+<span class="kn">from</span> <span class="nn">.gw_data</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">lal</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.linalg</span> <span class="k">as</span> <span class="nn">sl</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+
+<div class="viewcode-block" id="Network"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network">[docs]</a><span class="k">class</span> <span class="nc">Network</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Perform a ringdown filter analysis. Stores all the needed information.</span>
+
+<span class="sd">    Example usage::</span>
+
+<span class="sd">        import qnm_filter</span>
+<span class="sd">        input = dict(model_list = [(2, 2, 0)], #l, m, n</span>
+<span class="sd">                    # trucation time (geocenter, in second)</span>
+<span class="sd">                    t_init = 1126259462.4083147+2.0*1e-3,</span>
+<span class="sd">                    # length of the analysis window (in second)</span>
+<span class="sd">                    window_width = 0.2,</span>
+<span class="sd">                    # sampling rate after conditioning (in Hz)</span>
+<span class="sd">                    srate = 2048,</span>
+<span class="sd">                    # sky localization</span>
+<span class="sd">                    ra = 1.95, dec = -1.27,</span>
+<span class="sd">                    # lower limit of the high-pass filter (in Hz)</span>
+<span class="sd">                    flow = 20)</span>
+<span class="sd">        fit = qnm_filter.Network(**input)</span>
+<span class="sd">        fit.import_data(&#39;H-H1_GWOSC_16KHZ_R1-1126259447-32.hdf5&#39;)</span>
+<span class="sd">        fit.detector_alignment(**input)</span>
+<span class="sd">        fit.condition_data(&#39;original_data&#39;, **input)</span>
+<span class="sd">        fit.compute_acfs(&#39;original_data&#39;)</span>
+<span class="sd">        fit.cholesky_decomposition()</span>
+<span class="sd">        fit.add_filter(mass=68.5, chi=0.69, **input)</span>
+<span class="sd">        final_likelihood = fit.compute_likelihood(apply_filter=True)</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    original_data : dict</span>
+<span class="sd">        dictionary containing unfiltered data for each detector.</span>
+<span class="sd">    filtered_data : dict</span>
+<span class="sd">        dictionary containing filtered data for each detector.</span>
+<span class="sd">    acfs : dict</span>
+<span class="sd">        dictionary containing autocovariance functions for each detector.</span>
+<span class="sd">    start_times : dict</span>
+<span class="sd">        dictionary containing trucation time (start time of analysis window)</span>
+<span class="sd">        for each detector, determined by specified sky location.</span>
+<span class="sd">    cholesky_L : dict</span>
+<span class="sd">        dictionary containing Cholesky-decomposition of covariance matrix for each detector.</span>
+<span class="sd">    inverse_cholesky_L : dict</span>
+<span class="sd">        dictionary containing the inverse of Cholesky-decomposition.</span>
+<span class="sd">    ra : float</span>
+<span class="sd">        source right ascension, in radian.</span>
+<span class="sd">    dec : float</span>
+<span class="sd">        source declination, in radian.</span>
+<span class="sd">    t_init : float</span>
+<span class="sd">        trucation time (start time of analysis window) at geocenter.</span>
+<span class="sd">    window_width : float</span>
+<span class="sd">        width of analysis window</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kws</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">original_data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filtered_data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acfs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_times</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cholesky_L</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inverse_cholesky_L</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ra</span> <span class="o">=</span> <span class="n">kws</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ra&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dec</span> <span class="o">=</span> <span class="n">kws</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dec&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_init</span> <span class="o">=</span> <span class="n">kws</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;t_init&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window_width</span> <span class="o">=</span> <span class="n">kws</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;window_width&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Network.import_ligo_data"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.import_ligo_data">[docs]</a>    <span class="k">def</span> <span class="nf">import_ligo_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read data from disk and store data in :attr:`Network.original_data`.</span>
+
+<span class="sd">        Supports only HDF5 files downloaded from https://www.gw-openscience.org.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filename : string</span>
+<span class="sd">            name of file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">&quot;strain/Strain&quot;</span><span class="p">][:]</span>
+            <span class="n">t_start</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">&quot;meta/GPSstart&quot;</span><span class="p">][()]</span>
+            <span class="n">duration</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">&quot;meta/Duration&quot;</span><span class="p">][()]</span>
+            <span class="n">ifo</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">&quot;meta/Detector&quot;</span><span class="p">][()],</span> <span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+
+            <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">t_start</span><span class="p">,</span> <span class="n">t_start</span> <span class="o">+</span> <span class="n">duration</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">h</span><span class="p">),</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">original_data</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Network.import_data_array"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.import_data_array">[docs]</a>    <span class="k">def</span> <span class="nf">import_data_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add the inputted data to a dynamic/existing attribute.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        attr_name : string</span>
+<span class="sd">            Name of the dynamic attribute</span>
+<span class="sd">        data : ndarray</span>
+<span class="sd">            Inputted data</span>
+<span class="sd">        time : ndarray</span>
+<span class="sd">            Time stamps</span>
+<span class="sd">        ifo : string</span>
+<span class="sd">            Name of interferometer</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)[</span><span class="n">ifo</span><span class="p">]</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Network.detector_alignment"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.detector_alignment">[docs]</a>    <span class="k">def</span> <span class="nf">detector_alignment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the start times of analysis window at different</span>
+<span class="sd">        interferometers :attr:`Network.start_times` using sky location.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        t_init : float</span>
+<span class="sd">            The start time of analysis window at the geocenter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">t_init</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;t_init&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">t_init</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;t_init is not provided&quot;</span><span class="p">)</span>
+        <span class="n">tgps</span> <span class="o">=</span> <span class="n">lal</span><span class="o">.</span><span class="n">LIGOTimeGPS</span><span class="p">(</span><span class="n">t_init</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">ifo</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">original_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span> <span class="o">==</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">shifted_time</span> <span class="o">=</span> <span class="n">t_init</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">location</span> <span class="o">=</span> <span class="n">lal</span><span class="o">.</span><span class="n">cached_detector_by_prefix</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span><span class="o">.</span><span class="n">location</span>
+                <span class="n">dt_ifo</span> <span class="o">=</span> <span class="n">lal</span><span class="o">.</span><span class="n">TimeDelayFromEarthCenter</span><span class="p">(</span><span class="n">location</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">tgps</span><span class="p">)</span>
+                <span class="n">shifted_time</span> <span class="o">=</span> <span class="n">t_init</span> <span class="o">+</span> <span class="n">dt_ifo</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start_times</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span> <span class="o">=</span> <span class="n">shifted_time</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">shifted_time</span> <span class="o">&lt;</span> <span class="n">data</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid start time for </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ifo</span><span class="p">))</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">first_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find the index of a data point that is closet to the choosen</span>
+<span class="sd">        start time :attr:`Network.start_times` for each interferometer.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        i0_dict : dictionary</span>
+<span class="sd">            dictionary containing the start indices for all interferometers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">i0_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">ifo</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">original_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">t0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_times</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span>
+            <span class="n">i0_dict</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">i0_dict</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sampling_n</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Number of data points in analysis window.</span>
+
+<span class="sd">        Should be the same for all interferometers.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Length of truncated data array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">ifo</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">original_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">n_dict</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_width</span> <span class="o">/</span> <span class="n">data</span><span class="o">.</span><span class="n">time_interval</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">n_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Detectors have different sampling rates&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">n_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Network.truncate_data"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.truncate_data">[docs]</a>    <span class="k">def</span> <span class="nf">truncate_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">network_data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select segments of the given data that are in analysis window.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        network_data : dictionary</span>
+<span class="sd">            Network GW data to be truncated.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        data : dictionary</span>
+<span class="sd">            Truncated GW data for all interferometers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">i0s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_index</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">network_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">i0s</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="p">:</span> <span class="n">i0s</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampling_n</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+<div class="viewcode-block" id="Network.condition_data"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.condition_data">[docs]</a>    <span class="k">def</span> <span class="nf">condition_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Condition data for all interferometers.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        attr_name : string</span>
+<span class="sd">            Name of data to be conditioned</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">unconditioned_data</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ifo</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">unconditioned_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">t0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_times</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)[</span><span class="n">ifo</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">condition</span><span class="p">(</span><span class="n">t0</span><span class="o">=</span><span class="n">t0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Network.compute_acfs"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.compute_acfs">[docs]</a>    <span class="k">def</span> <span class="nf">compute_acfs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kws</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute ACFs with data named `attr_name`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        attr_name : string</span>
+<span class="sd">            Name of data for ACF estimation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">noisy_data</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acfs</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Overwriting ACFs&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ifo</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">noisy_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">noise</span> <span class="o">=</span> <span class="n">Noise</span><span class="p">(</span><span class="n">time</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+            <span class="n">noise</span><span class="o">.</span><span class="n">welch</span><span class="p">(</span><span class="o">**</span><span class="n">kws</span><span class="p">)</span>
+            <span class="n">noise</span><span class="o">.</span><span class="n">from_psd</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acfs</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span> <span class="o">=</span> <span class="n">noise</span><span class="o">.</span><span class="n">acf</span></div>
+
+<div class="viewcode-block" id="Network.cholesky_decomposition"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.cholesky_decomposition">[docs]</a>    <span class="k">def</span> <span class="nf">cholesky_decomposition</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the Cholesky-decomposition of covariance matrix :math:`C = L^TL`,</span>
+<span class="sd">        and the inverse of :math:`L`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">ifo</span><span class="p">,</span> <span class="n">acf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">acfs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># TODO: Warning: this assumes acf has the same time step as data, which could go wrong.</span>
+            <span class="n">truncated_acf</span> <span class="o">=</span> <span class="n">acf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampling_n</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">L</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cholesky</span><span class="p">(</span><span class="n">sl</span><span class="o">.</span><span class="n">toeplitz</span><span class="p">(</span><span class="n">truncated_acf</span><span class="p">))</span>
+            <span class="n">L_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">L</span><span class="p">)</span>
+            <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">L_inv</span><span class="p">,</span> <span class="n">L</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">L</span><span class="p">)))</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">norm</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-8</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Inverse of L is not correct&quot;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">cholesky_L</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span> <span class="o">=</span> <span class="n">L</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inverse_cholesky_L</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span> <span class="o">=</span> <span class="n">L_inv</span></div>
+
+<div class="viewcode-block" id="Network.compute_likelihood"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.compute_likelihood">[docs]</a>    <span class="k">def</span> <span class="nf">compute_likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">apply_filter</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute likelihood for interferometer network.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        apply_filter : bool</span>
+<span class="sd">            option to apply rational filters (default True).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        likelihood : float</span>
+<span class="sd">            The likelihood of interferometer network</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">likelihood</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">apply_filter</span><span class="p">:</span>
+            <span class="n">truncation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">truncate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">original_data</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">truncation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">truncate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filtered_data</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">ifo</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">truncation</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">wd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inverse_cholesky_L</span><span class="p">[</span><span class="n">ifo</span><span class="p">],</span> <span class="n">data</span><span class="p">)</span>
+            <span class="n">likelihood</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">wd</span><span class="p">,</span> <span class="n">wd</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">likelihood</span></div>
+
+<div class="viewcode-block" id="Network.add_filter"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.add_filter">[docs]</a>    <span class="k">def</span> <span class="nf">add_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply rational filters to :attr:`Network.original_data` and store</span>
+<span class="sd">        the filtered data in :attr:`Network.filtered_data`.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">ifo</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">original_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">data_in_freq</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">fft_data</span>
+            <span class="n">freq</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">fft_freq</span>
+            <span class="n">filter_in_freq</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">total_filter</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+            <span class="n">ifft</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">irfft</span><span class="p">(</span>
+                <span class="n">filter_in_freq</span> <span class="o">*</span> <span class="n">data_in_freq</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="s2">&quot;ortho&quot;</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">filtered_data</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">ifft</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Network.likelihood_vs_mass_spin"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.likelihood_vs_mass_spin">[docs]</a>    <span class="k">def</span> <span class="nf">likelihood_vs_mass_spin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">M_est</span><span class="p">,</span> <span class="n">chi_est</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute likelihood for the given mass and spin.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        M_est : float</span>
+<span class="sd">            in solar mass, mass of rational filters</span>
+<span class="sd">        chi_est : float</span>
+<span class="sd">            dimensionless spin of rational filters</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        The corresponding likelihood.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model_list</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;model_list&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_filter</span><span class="p">(</span><span class="n">mass</span><span class="o">=</span><span class="n">M_est</span><span class="p">,</span> <span class="n">chi</span><span class="o">=</span><span class="n">chi_est</span><span class="p">,</span> <span class="n">model_list</span><span class="o">=</span><span class="n">model_list</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_likelihood</span><span class="p">(</span><span class="n">apply_filter</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Network.compute_SNR"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.compute_SNR">[docs]</a>    <span class="k">def</span> <span class="nf">compute_SNR</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">ifo</span><span class="p">,</span> <span class="n">optimal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute matched-filter/optimal SNR.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        data : ndarray</span>
+<span class="sd">            Time-series data</span>
+<span class="sd">        template : ndarray</span>
+<span class="sd">            Ringdown template</span>
+<span class="sd">        ifo : string</span>
+<span class="sd">            Name of interferometer</span>
+<span class="sd">        optimal: bool</span>
+<span class="sd">            Compute optimal SNR</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">template_w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inverse_cholesky_L</span><span class="p">[</span><span class="n">ifo</span><span class="p">],</span> <span class="n">template</span><span class="p">)</span>
+        <span class="n">data_w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inverse_cholesky_L</span><span class="p">[</span><span class="n">ifo</span><span class="p">],</span> <span class="n">data</span><span class="p">)</span>
+        <span class="n">snr_opt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">template_w</span><span class="p">,</span> <span class="n">template_w</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">optimal</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">snr_opt</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">snr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">data_w</span><span class="p">,</span> <span class="n">template_w</span><span class="p">)</span> <span class="o">/</span> <span class="n">snr_opt</span>
+            <span class="k">return</span> <span class="n">snr</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Sizheng Ma.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
