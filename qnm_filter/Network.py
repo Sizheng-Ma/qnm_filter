@@ -226,6 +226,7 @@ class Network(object):
         and the inverse of :math:`L`.
         """
         for ifo, acf in self.acfs.items():
+            # TODO: Warning: this assumes acf has the same time step as data, which could go wrong.
             truncated_acf = acf.iloc[: self.sampling_n].values
             L = np.linalg.cholesky(sl.toeplitz(truncated_acf))
             L_inv = np.linalg.inv(L)
