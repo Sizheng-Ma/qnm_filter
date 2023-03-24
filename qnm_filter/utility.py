@@ -1,7 +1,13 @@
 """Useful functions for calculating and plotting data
 """
-__all__ = ["parallel_compute", "find_credible_region", "project_to_1d"]
+__all__ = [
+    "parallel_compute",
+    "find_credible_region",
+    "project_to_1d",
+    "pad_data_for_fft",
+]
 
+from .gw_data import *
 from joblib import Parallel, delayed
 import matplotlib.pyplot as pl
 import numpy as np
@@ -155,3 +161,41 @@ def project_to_1d(array2d, delta_mass, delta_chi):
     normalized_mass /= np.sum(normalized_mass * delta_mass)
     normalized_chi /= np.sum(normalized_chi * delta_chi)
     return normalized_mass, normalized_chi
+
+
+def pad_data_for_fft(data, partition, len_pow) -> None:
+    r"""Pad zeros on both sides of `data`, the final length is :math:`2^{\textrm{len\_pow}}`
+
+    Parameters
+    ----------
+    data : Data
+        data to be padded
+    partition : int
+        fraction of zeros to be padded on the left
+    len_pow : int
+        the final length of padded data is :math:`2^{\textrm{len\_pow}}`
+
+    Returns
+    -------
+    Data
+        padded data
+    """
+    padlen = 2 ** (len_pow + int(np.ceil(np.log2(len(data))))) - len(data)
+    data_pad = np.pad(
+        data.values,
+        (padlen // partition, padlen - (padlen // partition)),
+        "constant",
+        constant_values=(0, 0),
+    )
+
+    delta_t = data.time_interval
+    end1 = data.index[-1] + (padlen - (padlen // partition)) * delta_t
+    end2 = data.index[0] - (padlen // partition) * delta_t
+
+    tpad = np.pad(
+        data.index,
+        (padlen // partition, padlen - (padlen // partition)),
+        "linear_ramp",
+        end_values=(end2, end1),
+    )
+    return Data(data_pad, index=tpad)
