@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>qnm_filter.gw_data &mdash; QNM Filter 0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            QNM Filter
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">QNM Filter</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">qnm_filter.gw_data</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for qnm_filter.gw_data</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Utilities to manipulate GW data and rational filters.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Data&quot;</span><span class="p">,</span> <span class="s2">&quot;Filter&quot;</span><span class="p">,</span> <span class="s2">&quot;Noise&quot;</span><span class="p">]</span>
+
+<span class="kn">import</span> <span class="nn">astropy.constants</span> <span class="k">as</span> <span class="nn">c</span>
+<span class="kn">import</span> <span class="nn">qnm</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.signal</span> <span class="k">as</span> <span class="nn">ss</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="n">T_MSUN</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">M_sun</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="n">c</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">value</span> <span class="o">/</span> <span class="n">c</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">value</span><span class="o">**</span><span class="mi">3</span>
+
+
+<div class="viewcode-block" id="Filter"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Filter">[docs]</a><span class="k">class</span> <span class="nc">Filter</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Container for rational filters.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    chi : float</span>
+<span class="sd">        remnant dimensionless spin.</span>
+<span class="sd">    mass : float</span>
+<span class="sd">        remnant mass, in solar mass.</span>
+<span class="sd">    model_list : a list of dictionaries</span>
+<span class="sd">        quasinormal modes to be filtered.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chi</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mass</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">model_list</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chi</span> <span class="o">=</span> <span class="n">chi</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mass</span> <span class="o">=</span> <span class="n">mass</span>  <span class="c1"># in solar mass</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">model_list</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">get_spin</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return :attr:`Filter.chi`.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">chi</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">get_mass</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return :attr:`Filter.mass`.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mass</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">get_model_list</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return :attr:`Filter.model_list`.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_list</span>
+
+<div class="viewcode-block" id="Filter.mass_unit"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Filter.mass_unit">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">mass_unit</span><span class="p">(</span><span class="n">mass</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert mass unit from solar mass to second.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">mass</span> <span class="o">*</span> <span class="n">T_MSUN</span></div>
+
+<div class="viewcode-block" id="Filter.single_filter"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Filter.single_filter">[docs]</a>    <span class="k">def</span> <span class="nf">single_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">normalized_freq</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute rational filters.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        normalized_freq : array</span>
+<span class="sd">            in remnant mass, frequencies that rational filters are evaluated at.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">omega</span> <span class="o">=</span> <span class="n">qnm</span><span class="o">.</span><span class="n">modes_cache</span><span class="p">(</span><span class="n">s</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">)(</span><span class="n">a</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">chi</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">normalized_freq</span> <span class="o">-</span> <span class="n">omega</span><span class="p">)</span>
+            <span class="o">/</span> <span class="p">(</span><span class="n">normalized_freq</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">omega</span><span class="p">))</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">normalized_freq</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">omega</span><span class="p">))</span>
+            <span class="o">/</span> <span class="p">(</span><span class="n">normalized_freq</span> <span class="o">+</span> <span class="n">omega</span><span class="p">)</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Filter.total_filter"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Filter.total_filter">[docs]</a>    <span class="k">def</span> <span class="nf">total_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freq</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The total rational filter that removes the modes stored in :attr:`Filter.model_list`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        freq : array</span>
+<span class="sd">            in Hz, frequencies that the total filter is evaluated at.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">final_rational_filter</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">final_rational_filter</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mass</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">chi</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Mass = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="si">}</span><span class="s2">&quot;</span> <span class="sa">f</span><span class="s2">&quot; and Spin = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">chi</span><span class="si">}</span><span class="s2"> are needed&quot;</span>
+                <span class="p">)</span>
+        <span class="n">normalized_freq</span> <span class="o">=</span> <span class="n">freq</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mass</span> <span class="o">*</span> <span class="n">T_MSUN</span>
+        <span class="k">for</span> <span class="n">mode</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_list</span><span class="p">:</span>
+            <span class="n">final_rational_filter</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_filter</span><span class="p">(</span>
+                <span class="o">-</span><span class="n">normalized_freq</span><span class="p">,</span> <span class="n">mode</span><span class="p">[</span><span class="s2">&quot;l&quot;</span><span class="p">],</span> <span class="n">mode</span><span class="p">[</span><span class="s2">&quot;m&quot;</span><span class="p">],</span> <span class="n">mode</span><span class="p">[</span><span class="s2">&quot;n&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">final_rational_filter</span></div></div>
+
+
+<div class="viewcode-block" id="Data"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Data">[docs]</a><span class="k">class</span> <span class="nc">Data</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Container for gravitational data.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ifo : str</span>
+<span class="sd">        name of interferometer.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Data</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ifo</span> <span class="o">=</span> <span class="n">ifo</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Time stamps.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">time_interval</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Interval of the time stamps.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">fft_span</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Span of FFT.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_interval</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">fft_freq</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;FFT angular frequency stamps.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">rfftfreq</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">d</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_interval</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">fft_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;FFT of gravitational-wave data.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">rfft</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="s2">&quot;ortho&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Data.condition"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Data.condition">[docs]</a>    <span class="k">def</span> <span class="nf">condition</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">t0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">srate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">flow</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">fhigh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">trim</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
+        <span class="n">remove_mean</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Condition data.</span>
+
+<span class="sd">        Credit: This function is from `git@github.com:maxisi/ringdown.git`.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        flow : float</span>
+<span class="sd">            lower frequency for high passing.</span>
+<span class="sd">        fhigh : float</span>
+<span class="sd">            higher frequency for low passing.</span>
+<span class="sd">        srate : int</span>
+<span class="sd">            sampling frequency after downsampling.</span>
+<span class="sd">        t0 : float</span>
+<span class="sd">            target time to be preserved after downsampling.</span>
+<span class="sd">        remove_mean : bool</span>
+<span class="sd">            explicitly remove mean from time series after conditioning.</span>
+<span class="sd">        trim : float</span>
+<span class="sd">            fraction of data to trim from edges after conditioning, to avoid</span>
+<span class="sd">            spectral issues if filtering.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        cond_data : Data</span>
+<span class="sd">            conditioned data object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">srate</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;srate&quot;</span><span class="p">,</span> <span class="n">srate</span><span class="p">)</span>
+        <span class="n">flow</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;flow&quot;</span><span class="p">,</span> <span class="n">flow</span><span class="p">)</span>
+        <span class="n">raw_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">raw_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="n">ds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_span</span> <span class="o">/</span> <span class="n">srate</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">t0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ds</span> <span class="ow">or</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">raw_time</span> <span class="o">-</span> <span class="n">t0</span><span class="p">))</span>
+            <span class="n">raw_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">raw_time</span><span class="p">,</span> <span class="o">-</span><span class="p">(</span><span class="n">i</span> <span class="o">%</span> <span class="n">ds</span><span class="p">))</span>
+            <span class="n">raw_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">raw_data</span><span class="p">,</span> <span class="o">-</span><span class="p">(</span><span class="n">i</span> <span class="o">%</span> <span class="n">ds</span><span class="p">))</span>
+
+        <span class="n">fny</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fft_span</span>
+        <span class="c1"># Filter</span>
+        <span class="k">if</span> <span class="n">flow</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">fhigh</span><span class="p">:</span>
+            <span class="n">b</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="n">ss</span><span class="o">.</span><span class="n">butter</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">flow</span> <span class="o">/</span> <span class="n">fny</span><span class="p">,</span> <span class="n">btype</span><span class="o">=</span><span class="s2">&quot;highpass&quot;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">&quot;ba&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">fhigh</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">flow</span><span class="p">:</span>
+            <span class="n">b</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="n">ss</span><span class="o">.</span><span class="n">butter</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">fhigh</span> <span class="o">/</span> <span class="n">fny</span><span class="p">,</span> <span class="n">btype</span><span class="o">=</span><span class="s2">&quot;lowpass&quot;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">&quot;ba&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">flow</span> <span class="ow">and</span> <span class="n">fhigh</span><span class="p">:</span>
+            <span class="n">b</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="n">ss</span><span class="o">.</span><span class="n">butter</span><span class="p">(</span>
+                <span class="mi">4</span><span class="p">,</span> <span class="p">(</span><span class="n">flow</span> <span class="o">/</span> <span class="n">fny</span><span class="p">,</span> <span class="n">fhigh</span> <span class="o">/</span> <span class="n">fny</span><span class="p">),</span> <span class="n">btype</span><span class="o">=</span><span class="s2">&quot;bandpass&quot;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">&quot;ba&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">flow</span> <span class="ow">or</span> <span class="n">fhigh</span><span class="p">:</span>
+            <span class="n">cond_data</span> <span class="o">=</span> <span class="n">ss</span><span class="o">.</span><span class="n">filtfilt</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">raw_data</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cond_data</span> <span class="o">=</span> <span class="n">raw_data</span>
+
+        <span class="k">if</span> <span class="n">ds</span> <span class="ow">and</span> <span class="n">ds</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">cond_data</span> <span class="o">=</span> <span class="n">ss</span><span class="o">.</span><span class="n">decimate</span><span class="p">(</span><span class="n">cond_data</span><span class="p">,</span> <span class="n">ds</span><span class="p">,</span> <span class="n">zero_phase</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">cond_time</span> <span class="o">=</span> <span class="n">raw_time</span><span class="p">[::</span><span class="n">ds</span><span class="p">]</span>
+
+        <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cond_data</span><span class="p">)</span>
+        <span class="n">istart</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">trim</span> <span class="o">*</span> <span class="n">N</span><span class="p">))</span>
+        <span class="n">iend</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">trim</span><span class="p">)</span> <span class="o">*</span> <span class="n">N</span><span class="p">))</span>
+
+        <span class="n">cond_time</span> <span class="o">=</span> <span class="n">cond_time</span><span class="p">[</span><span class="n">istart</span><span class="p">:</span><span class="n">iend</span><span class="p">]</span>
+        <span class="n">cond_data</span> <span class="o">=</span> <span class="n">cond_data</span><span class="p">[</span><span class="n">istart</span><span class="p">:</span><span class="n">iend</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">remove_mean</span><span class="p">:</span>
+            <span class="n">cond_data</span> <span class="o">-=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">cond_data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Data</span><span class="p">(</span><span class="n">cond_data</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">cond_time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Noise"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Noise">[docs]</a><span class="k">class</span> <span class="nc">Noise</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Container for noise</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ifo : str</span>
+<span class="sd">        name of interferometer</span>
+<span class="sd">    psd : Data</span>
+<span class="sd">        one-sided power spectral density</span>
+<span class="sd">    asd : Data</span>
+<span class="sd">        amplitude spectral density</span>
+<span class="sd">    acf : Data</span>
+<span class="sd">        autocorrelation function</span>
+<span class="sd">    signal : Data</span>
+<span class="sd">        time-domain noisy signal</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ifo</span> <span class="o">=</span> <span class="n">ifo</span>
+        <span class="k">if</span> <span class="s2">&quot;psd&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">freq</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;freq&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">psd</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;psd&quot;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;asd&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">freq</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;freq&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">asd</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;asd&quot;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;acf&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;time&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acf</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;acf&quot;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;signal&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;time&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">signal</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;signal&quot;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Noise.load_noise_curve"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Noise.load_noise_curve">[docs]</a>    <span class="k">def</span> <span class="nf">load_noise_curve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read a txt/dat file and store the data in target attribute</span>
+<span class="sd">        :attr:`attr_name`. The file should have two columns.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        attr_name : string</span>
+<span class="sd">            name of target attribute, could be psd, asd, or acf.</span>
+<span class="sd">        filename : string</span>
+<span class="sd">            the file name to be read.</span>
+<span class="sd">        ifo : string, optional</span>
+<span class="sd">            name of interferometer, by default None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">filereader</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">Data</span><span class="p">(</span><span class="n">filereader</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">filereader</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span>
+        <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">__psd_to_acf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">psd</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Inverse FFT PSD to ACF</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        psd : Data</span>
+<span class="sd">            one-sided power spectral density</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Data</span>
+<span class="sd">            autocorrelation function</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">fs</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">psd</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">psd</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">rho</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">irfft</span><span class="p">(</span><span class="n">psd</span><span class="p">)</span> <span class="o">*</span> <span class="n">fs</span>
+        <span class="k">return</span> <span class="n">Data</span><span class="p">(</span><span class="n">rho</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">rho</span><span class="p">))</span> <span class="o">/</span> <span class="n">fs</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Noise.from_psd"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Noise.from_psd">[docs]</a>    <span class="k">def</span> <span class="nf">from_psd</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute ASD and ACF from PSD&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">asd</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psd</span><span class="o">.</span><span class="n">values</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">psd</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__psd_to_acf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psd</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Noise.from_asd"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Noise.from_asd">[docs]</a>    <span class="k">def</span> <span class="nf">from_asd</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute PSD and ACF from ASD&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">psd</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">asd</span><span class="o">.</span><span class="n">values</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">asd</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__psd_to_acf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psd</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Noise.from_acf"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Noise.from_acf">[docs]</a>    <span class="k">def</span> <span class="nf">from_acf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute PSD and ASD from ACF&quot;&quot;&quot;</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">acf</span><span class="o">.</span><span class="n">time_interval</span>
+        <span class="n">freq_samp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">rfftfreq</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acf</span><span class="p">),</span> <span class="n">d</span><span class="o">=</span><span class="n">dt</span><span class="p">)</span>
+        <span class="n">psd_temp</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">rfft</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acf</span><span class="p">)</span>
+        <span class="c1"># TODO: This could go wrong. PSD is supposed to be real. Better way?</span>
+        <span class="n">psd_temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">psd_temp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">psd</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">psd_temp</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">freq_samp</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">asd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psd</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Noise.welch"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Noise.welch">[docs]</a>    <span class="k">def</span> <span class="nf">welch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kws</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate PSD from data using Welch&#39;s method.&quot;&quot;&quot;</span>
+        <span class="n">fs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">signal</span><span class="o">.</span><span class="n">fft_span</span>
+        <span class="n">nperseg</span> <span class="o">=</span> <span class="n">fs</span> <span class="o">/</span> <span class="n">kws</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sampling_rate&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">freq</span><span class="p">,</span> <span class="n">psd</span> <span class="o">=</span> <span class="n">ss</span><span class="o">.</span><span class="n">welch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signal</span><span class="p">,</span> <span class="n">fs</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span> <span class="n">nperseg</span><span class="o">=</span><span class="n">nperseg</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">psd</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">psd</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Sizheng Ma.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
