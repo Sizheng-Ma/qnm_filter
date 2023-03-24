@@ -283,12 +283,12 @@ class Noise:
 
     def from_psd(self):
         """Compute ASD and ACF from PSD"""
-        self.asd = np.sqrt(self.psd)
+        self.asd = Data(np.sqrt(self.psd.values), index=self.psd.time, ifo=self.ifo)
         self.acf = self.__psd_to_acf(self.psd)
 
     def from_asd(self):
         """Compute PSD and ACF from ASD"""
-        self.psd = self.asd**2
+        self.psd = Data(self.asd.values**2, index=self.asd.time, ifo=self.ifo)
         self.acf = self.__psd_to_acf(self.psd)
 
     def from_acf(self):
