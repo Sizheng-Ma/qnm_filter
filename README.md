@@ -1,6 +1,6 @@
 # qnm_filter
 
-Ringdown analysis with rational filters. The details of the code package can be found in [Ma, et al. (2023a)](https://arxiv.org/abs/2301.06705), [Ma, et al. (2023a)](https://arxiv.org/abs/2301.06639), and [Ma, et al. (2022)](https://arxiv.org/abs/2207.10870).
+Ringdown analysis with rational filters. The details of the code package can be found in [Ma, et al. (2023a)](https://arxiv.org/abs/2301.06705), [Ma, et al. (2023b)](https://arxiv.org/abs/2301.06639), and [Ma, et al. (2022)](https://arxiv.org/abs/2207.10870).
 
 ## Installation
 
