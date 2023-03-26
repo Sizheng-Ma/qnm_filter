@@ -66,8 +66,14 @@
   <h1>Source code for qnm_filter.utility</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Useful functions for calculating and plotting data</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;parallel_compute&quot;</span><span class="p">,</span> <span class="s2">&quot;find_credible_region&quot;</span><span class="p">,</span> <span class="s2">&quot;project_to_1d&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;parallel_compute&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;find_credible_region&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;project_to_1d&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;pad_data_for_fft&quot;</span><span class="p">,</span>
+<span class="p">]</span>
 
+<span class="kn">from</span> <span class="nn">.gw_data</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">pl</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -221,6 +227,44 @@
     <span class="n">normalized_mass</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">normalized_mass</span> <span class="o">*</span> <span class="n">delta_mass</span><span class="p">)</span>
     <span class="n">normalized_chi</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">normalized_chi</span> <span class="o">*</span> <span class="n">delta_chi</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">normalized_mass</span><span class="p">,</span> <span class="n">normalized_chi</span></div>
+
+
+<div class="viewcode-block" id="pad_data_for_fft"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.utility.pad_data_for_fft">[docs]</a><span class="k">def</span> <span class="nf">pad_data_for_fft</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">partition</span><span class="p">,</span> <span class="n">len_pow</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Pad zeros on both sides of `data`, the final length is :math:`2^{\textrm{len\_pow}}`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : Data</span>
+<span class="sd">        data to be padded</span>
+<span class="sd">    partition : int</span>
+<span class="sd">        fraction of zeros to be padded on the left</span>
+<span class="sd">    len_pow : int</span>
+<span class="sd">        the final length of padded data is :math:`2^{\textrm{len\_pow}}`</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Data</span>
+<span class="sd">        padded data</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">padlen</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="n">len_pow</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)))))</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">data_pad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+        <span class="p">(</span><span class="n">padlen</span> <span class="o">//</span> <span class="n">partition</span><span class="p">,</span> <span class="n">padlen</span> <span class="o">-</span> <span class="p">(</span><span class="n">padlen</span> <span class="o">//</span> <span class="n">partition</span><span class="p">)),</span>
+        <span class="s2">&quot;constant&quot;</span><span class="p">,</span>
+        <span class="n">constant_values</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="n">delta_t</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">time_interval</span>
+    <span class="n">end1</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">padlen</span> <span class="o">-</span> <span class="p">(</span><span class="n">padlen</span> <span class="o">//</span> <span class="n">partition</span><span class="p">))</span> <span class="o">*</span> <span class="n">delta_t</span>
+    <span class="n">end2</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">padlen</span> <span class="o">//</span> <span class="n">partition</span><span class="p">)</span> <span class="o">*</span> <span class="n">delta_t</span>
+
+    <span class="n">tpad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
+        <span class="p">(</span><span class="n">padlen</span> <span class="o">//</span> <span class="n">partition</span><span class="p">,</span> <span class="n">padlen</span> <span class="o">-</span> <span class="p">(</span><span class="n">padlen</span> <span class="o">//</span> <span class="n">partition</span><span class="p">)),</span>
+        <span class="s2">&quot;linear_ramp&quot;</span><span class="p">,</span>
+        <span class="n">end_values</span><span class="o">=</span><span class="p">(</span><span class="n">end2</span><span class="p">,</span> <span class="n">end1</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">Data</span><span class="p">(</span><span class="n">data_pad</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">tpad</span><span class="p">)</span></div>
 </pre></div>
 
            </div>
