@@ -94,6 +94,7 @@
 <li><a class="reference internal" href="#module-qnm_filter.utility">qnm_filter.utility module</a><ul>
 <li><a class="reference internal" href="#qnm_filter.utility.find_credible_region"><code class="docutils literal notranslate"><span class="pre">find_credible_region()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.utility.parallel_compute"><code class="docutils literal notranslate"><span class="pre">parallel_compute()</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.utility.project_to_1d"><code class="docutils literal notranslate"><span class="pre">project_to_1d()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#module-qnm_filter">Module contents</a></li>
@@ -1249,7 +1250,7 @@ start time <code class="xref py py-attr docutils literal notranslate"><span clas
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>array2d</strong><span class="classifier">ndarray</span></dt><dd><p>2D array of sampling likelihood as a function of mass and spin</p>
+<dt><strong>array2d</strong><span class="classifier">ndarray</span></dt><dd><p>2D array of sampling log likelihood as a function of mass and spin</p>
 </dd>
 <dt><strong>num_cpu</strong><span class="classifier">int, optional</span></dt><dd><p>number of CPUs used for parallelization, by default -1</p>
 </dd>
@@ -1280,6 +1281,31 @@ start time <code class="xref py py-attr docutils literal notranslate"><span clas
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>reshaped_results</strong><span class="classifier">ndarray</span></dt><dd><p>2d array of the results with shape (len(x_arr), len(y_arr))</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="qnm_filter.utility.project_to_1d">
+<span class="sig-prename descclassname"><span class="pre">qnm_filter.utility.</span></span><span class="sig-name descname"><span class="pre">project_to_1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array2d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_chi</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/utility.html#project_to_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.utility.project_to_1d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project the 2D log likelihood to 1D probability density functions,
+whose integrations are normalized to be 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>array2d</strong><span class="classifier">ndarray</span></dt><dd><p>2D array of sampling log likelihood as a function of mass and spin</p>
+</dd>
+<dt><strong>delta_mass</strong><span class="classifier">float</span></dt><dd><p>step size of mass</p>
+</dd>
+<dt><strong>delta_chi</strong><span class="classifier">float</span></dt><dd><p>step size of chi</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>Two ndarrays</dt><dd><p>probability density functions of mass and spin, both normalized to a total probability of 1.</p>
 </dd>
 </dl>
 </dd>
