@@ -11,18 +11,18 @@ if __name__ == "__main__":
 
     setup(
         name="qnm_filter",
-        version='0.1',
+        version="0.1",
         description="QNM filters for black hole ringdowns.",
         long_description=long_description,
         url="https://github.com/Sizheng-Ma/qnm_filter",
-        author="Sizheng Ma",
-        author_email="sma@caltech.edu",
+        author="Sizheng Ma, Neil Lu",
+        author_email="sma@caltech.edu, Neil.Lu@anu.edu.au",
         packages=find_packages(),
         install_requires=[
             "h5py",
             "numpy",
             "qnm",
             "lalsuite",
-            "matplotlib"
-        ] # TODO: change the order
+            "matplotlib",
+        ],  # TODO: change the order
     )
