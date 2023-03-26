@@ -1,6 +1,6 @@
 """Useful functions for calculating and plotting data
 """
-__all__ = ["parallel_compute", "find_credible_region"]
+__all__ = ["parallel_compute", "find_credible_region", "project_to_1d"]
 
 from joblib import Parallel, delayed
 import matplotlib.pyplot as pl
@@ -47,7 +47,7 @@ def find_probability_difference(threshold, array2d, target_probability=0.9):
     threshold : float
         value to consider the probability of sampling above
     array2d : ndarray
-        2D array of sampling likelihood as a function of mass and spin
+        2D array of sampling log likelihood as a function of mass and spin
     target_probability : float, optional
         function returns 0 if the probability of sampling above the level = target_probability, by default 0.9
 
@@ -69,7 +69,7 @@ def sampling_probability(array2d, num_cpu=-1, target_probability=0.9):
     Parameters
     ----------
     array2d : ndarray
-        2D array of sampling likelihood as a function of mass and spin
+        2D array of sampling log likelihood as a function of mass and spin
     num_cpu : int, optional
         number of CPUs used for parallelization, by default -1
     target_probability : float, optional
@@ -98,7 +98,7 @@ def find_credible_region(array2d, num_cpu=-1, target_probability=0.9):
     Parameters
     ----------
     array2d : ndarray
-        2D array of sampling likelihood as a function of mass and spin
+        2D array of sampling log likelihood as a function of mass and spin
     num_cpu : int, optional
         number of CPUs used for parallelization, by default -1
     target_probability : float, optional
@@ -128,3 +128,30 @@ def find_credible_region(array2d, num_cpu=-1, target_probability=0.9):
     if abs(root_distance) > 1e-8:
         raise ValueError("Cannot find the root: {}".format(root_distance))
     return result
+
+
+def project_to_1d(array2d, delta_mass, delta_chi):
+    """Project the 2D log likelihood to 1D probability density functions,
+    whose integrations are normalized to be 1.
+
+    Parameters
+    ----------
+    array2d : ndarray
+        2D array of sampling log likelihood as a function of mass and spin
+    delta_mass : float
+        step size of mass
+    delta_chi : float
+        step size of chi
+
+    Returns
+    -------
+    Two ndarrays
+        probability density functions of mass and spin, both normalized to a total probability of 1.
+    """
+    evidence = logsumexp(array2d)
+    normalized_mass = np.exp(logsumexp(array2d, axis=0) - evidence)
+    normalized_chi = np.exp(logsumexp(array2d, axis=1) - evidence)
+
+    normalized_mass /= np.sum(normalized_mass * delta_mass)
+    normalized_chi /= np.sum(normalized_chi * delta_chi)
+    return normalized_mass, normalized_chi
