@@ -74,6 +74,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">scipy.signal</span> <span class="k">as</span> <span class="nn">ss</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">bilby</span>
 
 <span class="n">T_MSUN</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">M_sun</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="n">c</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">value</span> <span class="o">/</span> <span class="n">c</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">value</span><span class="o">**</span><span class="mi">3</span>
 
@@ -373,7 +374,13 @@
         <span class="n">nperseg</span> <span class="o">=</span> <span class="n">fs</span> <span class="o">/</span> <span class="n">kws</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sampling_rate&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
         <span class="n">freq</span><span class="p">,</span> <span class="n">psd</span> <span class="o">=</span> <span class="n">ss</span><span class="o">.</span><span class="n">welch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signal</span><span class="p">,</span> <span class="n">fs</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span> <span class="n">nperseg</span><span class="o">=</span><span class="n">nperseg</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">psd</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">psd</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span></div></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">psd</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">psd</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">bilby_psd</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">bilby</span><span class="o">.</span><span class="n">gw</span><span class="o">.</span><span class="n">detector</span><span class="o">.</span><span class="n">PowerSpectralDensity</span><span class="p">(</span>
+            <span class="n">frequency_array</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">psd</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">psd_array</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">psd</span><span class="o">.</span><span class="n">values</span>
+        <span class="p">)</span></div>
 </pre></div>
 
            </div>

@@ -12,10 +12,26 @@ qnm\_filter.Network module
    :undoc-members:
    :show-inheritance:
 
+qnm\_filter.bilby\_helper module
+--------------------------------
+
+.. automodule:: qnm_filter.bilby_helper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 qnm\_filter.gw\_data module
 ---------------------------
 
 .. automodule:: qnm_filter.gw_data
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+qnm\_filter.sxs\_helper module
+------------------------------
+
+.. automodule:: qnm_filter.sxs_helper
    :members:
    :undoc-members:
    :show-inheritance:
