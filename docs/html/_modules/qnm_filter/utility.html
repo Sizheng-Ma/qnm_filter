@@ -66,7 +66,7 @@
   <h1>Source code for qnm_filter.utility</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Useful functions for calculating and plotting data</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;parallel_compute&quot;</span><span class="p">,</span> <span class="s2">&quot;find_credible_region&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;parallel_compute&quot;</span><span class="p">,</span> <span class="s2">&quot;find_credible_region&quot;</span><span class="p">,</span> <span class="s2">&quot;project_to_1d&quot;</span><span class="p">]</span>
 
 <span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">pl</span>
@@ -113,7 +113,7 @@
 <span class="sd">    threshold : float</span>
 <span class="sd">        value to consider the probability of sampling above</span>
 <span class="sd">    array2d : ndarray</span>
-<span class="sd">        2D array of sampling likelihood as a function of mass and spin</span>
+<span class="sd">        2D array of sampling log likelihood as a function of mass and spin</span>
 <span class="sd">    target_probability : float, optional</span>
 <span class="sd">        function returns 0 if the probability of sampling above the level = target_probability, by default 0.9</span>
 
@@ -135,7 +135,7 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    array2d : ndarray</span>
-<span class="sd">        2D array of sampling likelihood as a function of mass and spin</span>
+<span class="sd">        2D array of sampling log likelihood as a function of mass and spin</span>
 <span class="sd">    num_cpu : int, optional</span>
 <span class="sd">        number of CPUs used for parallelization, by default -1</span>
 <span class="sd">    target_probability : float, optional</span>
@@ -164,7 +164,7 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    array2d : ndarray</span>
-<span class="sd">        2D array of sampling likelihood as a function of mass and spin</span>
+<span class="sd">        2D array of sampling log likelihood as a function of mass and spin</span>
 <span class="sd">    num_cpu : int, optional</span>
 <span class="sd">        number of CPUs used for parallelization, by default -1</span>
 <span class="sd">    target_probability : float, optional</span>
@@ -194,6 +194,33 @@
     <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">root_distance</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-8</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot find the root: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">root_distance</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="project_to_1d"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.utility.project_to_1d">[docs]</a><span class="k">def</span> <span class="nf">project_to_1d</span><span class="p">(</span><span class="n">array2d</span><span class="p">,</span> <span class="n">delta_mass</span><span class="p">,</span> <span class="n">delta_chi</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Project the 2D log likelihood to 1D probability density functions,</span>
+<span class="sd">    whose integrations are normalized to be 1.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    array2d : ndarray</span>
+<span class="sd">        2D array of sampling log likelihood as a function of mass and spin</span>
+<span class="sd">    delta_mass : float</span>
+<span class="sd">        step size of mass</span>
+<span class="sd">    delta_chi : float</span>
+<span class="sd">        step size of chi</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Two ndarrays</span>
+<span class="sd">        probability density functions of mass and spin, both normalized to a total probability of 1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">evidence</span> <span class="o">=</span> <span class="n">logsumexp</span><span class="p">(</span><span class="n">array2d</span><span class="p">)</span>
+    <span class="n">normalized_mass</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">array2d</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="n">evidence</span><span class="p">)</span>
+    <span class="n">normalized_chi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">array2d</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">evidence</span><span class="p">)</span>
+
+    <span class="n">normalized_mass</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">normalized_mass</span> <span class="o">*</span> <span class="n">delta_mass</span><span class="p">)</span>
+    <span class="n">normalized_chi</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">normalized_chi</span> <span class="o">*</span> <span class="n">delta_chi</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">normalized_mass</span><span class="p">,</span> <span class="n">normalized_chi</span></div>
 </pre></div>
 
            </div>
