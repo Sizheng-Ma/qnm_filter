@@ -100,7 +100,11 @@
 </li>
 <li><a class="reference internal" href="#module-qnm_filter.sxs_helper">qnm_filter.sxs_helper module</a><ul>
 <li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms</span></code></a><ul>
-<li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.get_meta_data"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.get_meta_data()</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.get_bbh_m1"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.get_bbh_m1</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.get_bbh_m2"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.get_bbh_m2</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.get_bbh_spin1"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.get_bbh_spin1</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.get_bbh_spin2"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.get_bbh_spin2</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.get_remnant_data"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.get_remnant_data()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.harmonics_to_polarizations"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.harmonics_to_polarizations()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.import_sxs_data"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.import_sxs_data()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.pad_data"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.pad_data()</span></code></a></li>
@@ -1417,8 +1421,8 @@ This is mainly for FFT so the time stamp should be evenly spaced, and the total 
 <p class="rubric">Methods</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.get_meta_data" title="qnm_filter.sxs_helper.SXSWaveforms.get_meta_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_meta_data</span></code></a>([download])</p></td>
-<td><p>Get meta data, including remnant mass and dimensionless spin.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.get_remnant_data" title="qnm_filter.sxs_helper.SXSWaveforms.get_remnant_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_remnant_data</span></code></a>([download])</p></td>
+<td><p>Get remnant mass and dimensionless spin from SXS catalog.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.harmonics_to_polarizations" title="qnm_filter.sxs_helper.SXSWaveforms.harmonics_to_polarizations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">harmonics_to_polarizations</span></code></a>(attr_name, iota, ...)</p></td>
 <td><p>Compute two polarizations from GW harmonics stored in <cite>attr_name</cite></p></td>
@@ -1434,10 +1438,34 @@ This is mainly for FFT so the time stamp should be evenly spaced, and the total 
 </tr>
 </tbody>
 </table>
+<dl class="py property">
+<dt class="sig sig-object py" id="qnm_filter.sxs_helper.SXSWaveforms.get_bbh_m1">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_bbh_m1</span></span><a class="headerlink" href="#qnm_filter.sxs_helper.SXSWaveforms.get_bbh_m1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the mass of the first BH (at a reference time during inspiral)</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="qnm_filter.sxs_helper.SXSWaveforms.get_bbh_m2">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_bbh_m2</span></span><a class="headerlink" href="#qnm_filter.sxs_helper.SXSWaveforms.get_bbh_m2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the mass of the second BH (at a reference time during inspiral)</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="qnm_filter.sxs_helper.SXSWaveforms.get_bbh_spin1">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_bbh_spin1</span></span><a class="headerlink" href="#qnm_filter.sxs_helper.SXSWaveforms.get_bbh_spin1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the spin vector of the first BH (at a reference time during inspiral)</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="qnm_filter.sxs_helper.SXSWaveforms.get_bbh_spin2">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_bbh_spin2</span></span><a class="headerlink" href="#qnm_filter.sxs_helper.SXSWaveforms.get_bbh_spin2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the spin vector of the second BH (at a reference time during inspiral)</p>
+</dd></dl>
+
 <dl class="py method">
-<dt class="sig sig-object py" id="qnm_filter.sxs_helper.SXSWaveforms.get_meta_data">
-<span class="sig-name descname"><span class="pre">get_meta_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">download</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/qnm_filter/sxs_helper.html#SXSWaveforms.get_meta_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.sxs_helper.SXSWaveforms.get_meta_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get meta data, including remnant mass and dimensionless spin.
+<dt class="sig sig-object py" id="qnm_filter.sxs_helper.SXSWaveforms.get_remnant_data">
+<span class="sig-name descname"><span class="pre">get_remnant_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">download</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/qnm_filter/sxs_helper.html#SXSWaveforms.get_remnant_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.sxs_helper.SXSWaveforms.get_remnant_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get remnant mass and dimensionless spin from SXS catalog.
 Note only spin’s length is returned.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>

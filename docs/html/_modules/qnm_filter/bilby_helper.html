@@ -66,7 +66,12 @@
   <h1>Source code for qnm_filter.bilby_helper</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Wrapping up some Bilby functions for convenience</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;bilby_get_strain&quot;</span><span class="p">,</span> <span class="s2">&quot;set_bilby_ifo&quot;</span><span class="p">,</span> <span class="s2">&quot;bilby_injection&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;bilby_get_strain&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;set_bilby_ifo&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;set_bilby_predefined_ifo&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;bilby_injection&quot;</span><span class="p">,</span>
+<span class="p">]</span>
 
 <span class="kn">from</span> <span class="nn">.gw_data</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">import</span> <span class="nn">copy</span>
@@ -74,11 +79,66 @@
 
 
 <div class="viewcode-block" id="bilby_get_strain"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.bilby_helper.bilby_get_strain">[docs]</a><span class="k">def</span> <span class="nf">bilby_get_strain</span><span class="p">(</span><span class="n">ifo</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get strain data from Bilby&#39;s `Interferometer` and store the result in `Data`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ifo : bilby.gw.detector.Interferometer</span>
+<span class="sd">        An instance of `bilby.gw.detector.Interferometer`</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Data</span>
+<span class="sd">        strain data</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">Data</span><span class="p">(</span>
         <span class="n">ifo</span><span class="o">.</span><span class="n">strain_data</span><span class="o">.</span><span class="n">time_domain_strain</span><span class="p">,</span>
         <span class="n">index</span><span class="o">=</span><span class="n">ifo</span><span class="o">.</span><span class="n">strain_data</span><span class="o">.</span><span class="n">time_array</span><span class="p">,</span>
         <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
     <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="set_bilby_predefined_ifo"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.bilby_helper.set_bilby_predefined_ifo">[docs]</a><span class="k">def</span> <span class="nf">set_bilby_predefined_ifo</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">,</span>
+    <span class="n">sampling_frequency</span><span class="p">,</span>
+    <span class="n">duration</span><span class="p">,</span>
+    <span class="n">start_time</span><span class="p">,</span>
+    <span class="n">zero_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Construct a Bilby&#39;s `Interferometer` instance with its internal PSD.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : string</span>
+<span class="sd">        name of interferometer, e.g., &quot;H1&quot; and &quot;L1&quot;</span>
+<span class="sd">    sampling_frequency : float</span>
+<span class="sd">        in Hz</span>
+<span class="sd">    duration : float</span>
+<span class="sd">        in second. The duration of the generated time series</span>
+<span class="sd">    start_time : float</span>
+<span class="sd">        in second. The start time of the generated time series</span>
+<span class="sd">    zero_noise : bool, optional</span>
+<span class="sd">        if ture, returns pure waveform strain w/o noise, by default False</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bilby.gw.detector.Interferometer</span>
+<span class="sd">        An instance of `bilby.gw.detector.Interferometer`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ifo</span> <span class="o">=</span> <span class="n">bilby</span><span class="o">.</span><span class="n">gw</span><span class="o">.</span><span class="n">detector</span><span class="o">.</span><span class="n">InterferometerList</span><span class="p">([</span><span class="n">name</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">zero_noise</span><span class="p">:</span>
+        <span class="n">ifo</span><span class="o">.</span><span class="n">set_strain_data_from_zero_noise</span><span class="p">(</span>
+            <span class="n">sampling_frequency</span><span class="o">=</span><span class="n">sampling_frequency</span><span class="p">,</span>
+            <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span>
+            <span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ifo</span><span class="o">.</span><span class="n">set_strain_data_from_power_spectral_density</span><span class="p">(</span>
+            <span class="n">sampling_frequency</span><span class="o">=</span><span class="n">sampling_frequency</span><span class="p">,</span>
+            <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span>
+            <span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">ifo</span></div>
 
 
 <div class="viewcode-block" id="set_bilby_ifo"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.bilby_helper.set_bilby_ifo">[docs]</a><span class="k">def</span> <span class="nf">set_bilby_ifo</span><span class="p">(</span>
@@ -95,6 +155,40 @@
     <span class="n">xarm_azimuth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
     <span class="n">yarm_azimuth</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span>
 <span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Construct a Bilby&#39;s `Interferometer` instance given the :class:`Noise` class.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Noise : :class:`Noise`</span>
+<span class="sd">        An instance of :class:`Noise`</span>
+<span class="sd">    sampling_frequency : float</span>
+<span class="sd">        in Hz</span>
+<span class="sd">    duration : float</span>
+<span class="sd">        in second. The duration of the generated time series</span>
+<span class="sd">    start_time : float</span>
+<span class="sd">        in second. The start time of the generated time series</span>
+<span class="sd">    zero_noise : bool, optional</span>
+<span class="sd">        if ture, returns pure waveform strain w/o noise, by default False</span>
+<span class="sd">    name : string, optional</span>
+<span class="sd">        name of interferometer, by default None</span>
+<span class="sd">    length : int, optional</span>
+<span class="sd">        length of interferometer, by default 0</span>
+<span class="sd">    latitude : int, optional</span>
+<span class="sd">        latitude of interferometer, by default 0</span>
+<span class="sd">    longitude : int, optional</span>
+<span class="sd">        longitude of interferometer, by default 0</span>
+<span class="sd">    elevation : int, optional</span>
+<span class="sd">        elevation of interferometer, by default 0</span>
+<span class="sd">    xarm_azimuth : int, optional</span>
+<span class="sd">        azimuth angle of the x-arm of interferometer, by default 0</span>
+<span class="sd">    yarm_azimuth : int, optional</span>
+<span class="sd">        azimuth angle of the y-arm  of interferometer, by default 90</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bilby.gw.detector.Interferometer</span>
+<span class="sd">        An instance of `bilby.gw.detector.Interferometer`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">ifo</span> <span class="o">=</span> <span class="n">bilby</span><span class="o">.</span><span class="n">gw</span><span class="o">.</span><span class="n">detector</span><span class="o">.</span><span class="n">Interferometer</span><span class="p">(</span>
         <span class="n">power_spectral_density</span><span class="o">=</span><span class="n">Noise</span><span class="o">.</span><span class="n">bilby_psd</span><span class="p">,</span>
         <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
@@ -124,6 +218,25 @@
 
 
 <div class="viewcode-block" id="bilby_injection"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.bilby_helper.bilby_injection">[docs]</a><span class="k">def</span> <span class="nf">bilby_injection</span><span class="p">(</span><span class="n">ifo</span><span class="p">,</span> <span class="n">NR_injection_into_Bilby</span><span class="p">,</span> <span class="o">**</span><span class="n">injection_parameters</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Inject a GW strain into noise</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ifo : bilby.gw.detector.Interferometer</span>
+<span class="sd">        An instance of `bilby.gw.detector.Interferometer`</span>
+<span class="sd">    NR_injection_into_Bilby : function</span>
+<span class="sd">        waveform to be injected.</span>
+
+<span class="sd">        Example::</span>
+
+<span class="sd">            def NR_injection_into_Bilby(time, **waveform_kwargs):</span>
+<span class="sd">                return {&#39;plus&#39;: foo, &#39;cross&#39;: bar}</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bilby.gw.detector.Interferometer</span>
+<span class="sd">        An instance of `bilby.gw.detector.Interferometer`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">waveform</span> <span class="o">=</span> <span class="n">bilby</span><span class="o">.</span><span class="n">gw</span><span class="o">.</span><span class="n">waveform_generator</span><span class="o">.</span><span class="n">WaveformGenerator</span><span class="p">(</span>
         <span class="n">duration</span><span class="o">=</span><span class="n">ifo</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span>
         <span class="n">sampling_frequency</span><span class="o">=</span><span class="n">ifo</span><span class="o">.</span><span class="n">sampling_frequency</span><span class="p">,</span>
