@@ -121,8 +121,8 @@ class SXSWaveforms:
                 waveform_lm_trunc.data, index=waveform_lm_trunc.t - tp
             )
 
-    def get_meta_data(self, download=False) -> None:
-        """Get meta data, including remnant mass and dimensionless spin.
+    def get_remnant_data(self, download=False) -> None:
+        """Get remnant mass and dimensionless spin from SXS catalog.
         Note only spin's length is returned.
 
         Parameters
@@ -138,6 +138,30 @@ class SXSWaveforms:
         self.mf = metadata["remnant_mass"]
         spinvec = metadata["remnant_dimensionless_spin"]
         self.chif = np.sqrt(np.sum(np.array(spinvec) ** 2))
+
+    @property
+    def get_bbh_spin1(self):
+        """Get the spin vector of the first BH (at a reference time during inspiral)"""
+        metadata = sxs.load(self.filename + "/Lev/metadata.json")
+        return metadata["reference_dimensionless_spin1"]
+
+    @property
+    def get_bbh_spin2(self):
+        """Get the spin vector of the second BH (at a reference time during inspiral)"""
+        metadata = sxs.load(self.filename + "/Lev/metadata.json")
+        return metadata["reference_dimensionless_spin2"]
+
+    @property
+    def get_bbh_m1(self):
+        """Get the mass of the first BH (at a reference time during inspiral)"""
+        metadata = sxs.load(self.filename + "/Lev/metadata.json")
+        return metadata["reference_mass1"]
+
+    @property
+    def get_bbh_m2(self):
+        """Get the mass of the second BH (at a reference time during inspiral)"""
+        metadata = sxs.load(self.filename + "/Lev/metadata.json")
+        return metadata["reference_mass2"]
 
     def pad_data(self, partition, len_pow) -> None:
         r"""Pad zeros on both sides of GW harmonics :attr:`self.original_data`,
