@@ -14,7 +14,6 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
-        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
@@ -62,6 +61,13 @@
 </li>
 </ul>
 </li>
+<li><a class="reference internal" href="#module-qnm_filter.bilby_helper">qnm_filter.bilby_helper module</a><ul>
+<li><a class="reference internal" href="#qnm_filter.bilby_helper.bilby_get_strain"><code class="docutils literal notranslate"><span class="pre">bilby_get_strain()</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.bilby_helper.bilby_injection"><code class="docutils literal notranslate"><span class="pre">bilby_injection()</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.bilby_helper.set_bilby_ifo"><code class="docutils literal notranslate"><span class="pre">set_bilby_ifo()</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.bilby_helper.set_bilby_predefined_ifo"><code class="docutils literal notranslate"><span class="pre">set_bilby_predefined_ifo()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#module-qnm_filter.gw_data">qnm_filter.gw_data module</a><ul>
 <li><a class="reference internal" href="#qnm_filter.gw_data.Data"><code class="docutils literal notranslate"><span class="pre">Data</span></code></a><ul>
 <li><a class="reference internal" href="#qnm_filter.gw_data.Data.condition"><code class="docutils literal notranslate"><span class="pre">Data.condition()</span></code></a></li>
@@ -82,6 +88,7 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#qnm_filter.gw_data.Noise"><code class="docutils literal notranslate"><span class="pre">Noise</span></code></a><ul>
+<li><a class="reference internal" href="#qnm_filter.gw_data.Noise.bilby_psd"><code class="docutils literal notranslate"><span class="pre">Noise.bilby_psd</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.gw_data.Noise.from_acf"><code class="docutils literal notranslate"><span class="pre">Noise.from_acf()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.gw_data.Noise.from_asd"><code class="docutils literal notranslate"><span class="pre">Noise.from_asd()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.gw_data.Noise.from_psd"><code class="docutils literal notranslate"><span class="pre">Noise.from_psd()</span></code></a></li>
@@ -91,8 +98,20 @@
 </li>
 </ul>
 </li>
+<li><a class="reference internal" href="#module-qnm_filter.sxs_helper">qnm_filter.sxs_helper module</a><ul>
+<li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms</span></code></a><ul>
+<li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.get_meta_data"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.get_meta_data()</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.harmonics_to_polarizations"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.harmonics_to_polarizations()</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.import_sxs_data"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.import_sxs_data()</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.pad_data"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.pad_data()</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.scale_to_si"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.scale_to_si()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li><a class="reference internal" href="#module-qnm_filter.utility">qnm_filter.utility module</a><ul>
 <li><a class="reference internal" href="#qnm_filter.utility.find_credible_region"><code class="docutils literal notranslate"><span class="pre">find_credible_region()</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.utility.pad_data_for_fft"><code class="docutils literal notranslate"><span class="pre">pad_data_for_fft()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.utility.parallel_compute"><code class="docutils literal notranslate"><span class="pre">parallel_compute()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.utility.project_to_1d"><code class="docutils literal notranslate"><span class="pre">project_to_1d()</span></code></a></li>
 </ul>
@@ -196,7 +215,7 @@ for each detector, determined by specified sky location.</p>
 <td><p>Apply rational filters to <code class="xref py py-attr docutils literal notranslate"><span class="pre">Network.original_data</span></code> and store the filtered data in <code class="xref py py-attr docutils literal notranslate"><span class="pre">Network.filtered_data</span></code>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.cholesky_decomposition" title="qnm_filter.Network.Network.cholesky_decomposition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cholesky_decomposition</span></code></a>()</p></td>
-<td><p>Compute the Cholesky-decomposition of covariance matrix <span class="math notranslate nohighlight">\(C = L^TL\)</span>, and the inverse of <span class="math notranslate nohighlight">\(L\)</span>.</p></td>
+<td><p>Compute the Cholesky-decomposition of covariance matrix <img class="math" src="_images/math/87948fdb7509120f202c50abce992da4f1733a54.png" alt="C = L^TL"/>, and the inverse of <img class="math" src="_images/math/19eef1966f7c545af3ac8c0fa486974d873e3c65.png" alt="L"/>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.compute_SNR" title="qnm_filter.Network.Network.compute_SNR"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_SNR</span></code></a>(data, template, ifo, optimal)</p></td>
 <td><p>Compute matched-filter/optimal SNR.</p></td>
@@ -237,8 +256,8 @@ the filtered data in <code class="xref py py-attr docutils literal notranslate">
 <dl class="py method">
 <dt class="sig sig-object py" id="qnm_filter.Network.Network.cholesky_decomposition">
 <span class="sig-name descname"><span class="pre">cholesky_decomposition</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/qnm_filter/Network.html#Network.cholesky_decomposition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.Network.Network.cholesky_decomposition" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute the Cholesky-decomposition of covariance matrix <span class="math notranslate nohighlight">\(C = L^TL\)</span>,
-and the inverse of <span class="math notranslate nohighlight">\(L\)</span>.</p>
+<dd><p>Compute the Cholesky-decomposition of covariance matrix <img class="math" src="_images/math/87948fdb7509120f202c50abce992da4f1733a54.png" alt="C = L^TL"/>,
+and the inverse of <img class="math" src="_images/math/19eef1966f7c545af3ac8c0fa486974d873e3c65.png" alt="L"/>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -423,6 +442,127 @@ start time <code class="xref py py-attr docutils literal notranslate"><span clas
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+</section>
+<section id="module-qnm_filter.bilby_helper">
+<span id="qnm-filter-bilby-helper-module"></span><h2>qnm_filter.bilby_helper module<a class="headerlink" href="#module-qnm_filter.bilby_helper" title="Permalink to this heading">¶</a></h2>
+<p>Wrapping up some Bilby functions for convenience</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="qnm_filter.bilby_helper.bilby_get_strain">
+<span class="sig-prename descclassname"><span class="pre">qnm_filter.bilby_helper.</span></span><span class="sig-name descname"><span class="pre">bilby_get_strain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ifo</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/bilby_helper.html#bilby_get_strain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.bilby_helper.bilby_get_strain" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get strain data from Bilby’s <cite>Interferometer</cite> and store the result in <cite>Data</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>ifo</strong><span class="classifier">bilby.gw.detector.Interferometer</span></dt><dd><p>An instance of <cite>bilby.gw.detector.Interferometer</cite></p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>Data</dt><dd><p>strain data</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="qnm_filter.bilby_helper.bilby_injection">
+<span class="sig-prename descclassname"><span class="pre">qnm_filter.bilby_helper.</span></span><span class="sig-name descname"><span class="pre">bilby_injection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ifo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">NR_injection_into_Bilby</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">injection_parameters</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/bilby_helper.html#bilby_injection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.bilby_helper.bilby_injection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inject a GW strain into noise</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt><strong>ifo</strong><span class="classifier">bilby.gw.detector.Interferometer</span></dt><dd><p>An instance of <cite>bilby.gw.detector.Interferometer</cite></p>
+</dd>
+<dt><strong>NR_injection_into_Bilby</strong><span class="classifier">function</span></dt><dd><p>waveform to be injected.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">NR_injection_into_Bilby</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="o">**</span><span class="n">waveform_kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;plus&#39;</span><span class="p">:</span> <span class="n">foo</span><span class="p">,</span> <span class="s1">&#39;cross&#39;</span><span class="p">:</span> <span class="n">bar</span><span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>bilby.gw.detector.Interferometer</dt><dd><p>An instance of <cite>bilby.gw.detector.Interferometer</cite></p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="qnm_filter.bilby_helper.set_bilby_ifo">
+<span class="sig-prename descclassname"><span class="pre">qnm_filter.bilby_helper.</span></span><span class="sig-name descname"><span class="pre">set_bilby_ifo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Noise</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_frequency</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_noise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">latitude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">longitude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elevation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xarm_azimuth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yarm_azimuth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">90</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/bilby_helper.html#set_bilby_ifo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.bilby_helper.set_bilby_ifo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct a Bilby’s <cite>Interferometer</cite> instance given the <code class="xref py py-class docutils literal notranslate"><span class="pre">Noise</span></code> class.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt><strong>Noise</strong><span class="classifier"><code class="xref py py-class docutils literal notranslate"><span class="pre">Noise</span></code></span></dt><dd><p>An instance of <code class="xref py py-class docutils literal notranslate"><span class="pre">Noise</span></code></p>
+</dd>
+<dt><strong>sampling_frequency</strong><span class="classifier">float</span></dt><dd><p>in Hz</p>
+</dd>
+<dt><strong>duration</strong><span class="classifier">float</span></dt><dd><p>in second. The duration of the generated time series</p>
+</dd>
+<dt><strong>start_time</strong><span class="classifier">float</span></dt><dd><p>in second. The start time of the generated time series</p>
+</dd>
+<dt><strong>zero_noise</strong><span class="classifier">bool, optional</span></dt><dd><p>if ture, returns pure waveform strain w/o noise, by default False</p>
+</dd>
+<dt><strong>name</strong><span class="classifier">string, optional</span></dt><dd><p>name of interferometer, by default None</p>
+</dd>
+<dt><strong>length</strong><span class="classifier">int, optional</span></dt><dd><p>length of interferometer, by default 0</p>
+</dd>
+<dt><strong>latitude</strong><span class="classifier">int, optional</span></dt><dd><p>latitude of interferometer, by default 0</p>
+</dd>
+<dt><strong>longitude</strong><span class="classifier">int, optional</span></dt><dd><p>longitude of interferometer, by default 0</p>
+</dd>
+<dt><strong>elevation</strong><span class="classifier">int, optional</span></dt><dd><p>elevation of interferometer, by default 0</p>
+</dd>
+<dt><strong>xarm_azimuth</strong><span class="classifier">int, optional</span></dt><dd><p>azimuth angle of the x-arm of interferometer, by default 0</p>
+</dd>
+<dt><strong>yarm_azimuth</strong><span class="classifier">int, optional</span></dt><dd><p>azimuth angle of the y-arm  of interferometer, by default 90</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>bilby.gw.detector.Interferometer</dt><dd><p>An instance of <cite>bilby.gw.detector.Interferometer</cite></p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="qnm_filter.bilby_helper.set_bilby_predefined_ifo">
+<span class="sig-prename descclassname"><span class="pre">qnm_filter.bilby_helper.</span></span><span class="sig-name descname"><span class="pre">set_bilby_predefined_ifo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_frequency</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_noise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/bilby_helper.html#set_bilby_predefined_ifo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.bilby_helper.set_bilby_predefined_ifo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct a Bilby’s <cite>Interferometer</cite> instance with its internal PSD.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">string</span></dt><dd><p>name of interferometer, e.g., “H1” and “L1”</p>
+</dd>
+<dt><strong>sampling_frequency</strong><span class="classifier">float</span></dt><dd><p>in Hz</p>
+</dd>
+<dt><strong>duration</strong><span class="classifier">float</span></dt><dd><p>in second. The duration of the generated time series</p>
+</dd>
+<dt><strong>start_time</strong><span class="classifier">float</span></dt><dd><p>in second. The start time of the generated time series</p>
+</dd>
+<dt><strong>zero_noise</strong><span class="classifier">bool, optional</span></dt><dd><p>if ture, returns pure waveform strain w/o noise, by default False</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>bilby.gw.detector.Interferometer</dt><dd><p>An instance of <cite>bilby.gw.detector.Interferometer</cite></p>
+</dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
@@ -1194,6 +1334,12 @@ start time <code class="xref py py-attr docutils literal notranslate"><span clas
 </tr>
 </tbody>
 </table>
+<dl class="py property">
+<dt class="sig sig-object py" id="qnm_filter.gw_data.Noise.bilby_psd">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bilby_psd</span></span><a class="headerlink" href="#qnm_filter.gw_data.Noise.bilby_psd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct a Bilby <cite>PowerSpectralDensity</cite> instance.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="qnm_filter.gw_data.Noise.from_acf">
 <span class="sig-name descname"><span class="pre">from_acf</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/gw_data.html#Noise.from_acf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.gw_data.Noise.from_acf" title="Permalink to this definition">¶</a></dt>
@@ -1240,6 +1386,170 @@ start time <code class="xref py py-attr docutils literal notranslate"><span clas
 </dd></dl>
 
 </section>
+<section id="module-qnm_filter.sxs_helper">
+<span id="qnm-filter-sxs-helper-module"></span><h2>qnm_filter.sxs_helper module<a class="headerlink" href="#module-qnm_filter.sxs_helper" title="Permalink to this heading">¶</a></h2>
+<p>Wrapping up some SXS (numerical relativity) functions for convenience</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="qnm_filter.sxs_helper.SXSWaveforms">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">qnm_filter.sxs_helper.</span></span><span class="sig-name descname"><span class="pre">SXSWaveforms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kws</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/sxs_helper.html#SXSWaveforms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.sxs_helper.SXSWaveforms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Container for numerical relativity waveforms, downloaded from
+SXS catalog <a class="reference external" href="https://data.black-holes.org/waveforms/index.html">https://data.black-holes.org/waveforms/index.html</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>original_data</strong><span class="classifier">dictionary</span></dt><dd><p>dictionary that stores all the GW harmonics</p>
+</dd>
+<dt><strong>padded_data</strong><span class="classifier">dictionary</span></dt><dd><p>dictionary that stores all the GW harmonics padded with 0 on both sides.
+This is mainly for FFT so the time stamp should be evenly spaced, and the total length needs to be a power of 2.</p>
+</dd>
+<dt><strong>data_in_si</strong><span class="classifier">dictionary</span></dt><dd><p>dictionary that stores all the GW harmonics that have SI units</p>
+</dd>
+<dt><strong>filename</strong><span class="classifier">string</span></dt><dd><p>SXS ID, in the format of <cite>SXS:BBH:XXXX</cite></p>
+</dd>
+<dt><strong>mf</strong><span class="classifier">float</span></dt><dd><p>remnant mass, in the unit of BBH’s total mass</p>
+</dd>
+<dt><strong>chif</strong><span class="classifier">float</span></dt><dd><p>remnant dimensionless spin</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.get_meta_data" title="qnm_filter.sxs_helper.SXSWaveforms.get_meta_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_meta_data</span></code></a>([download])</p></td>
+<td><p>Get meta data, including remnant mass and dimensionless spin.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.harmonics_to_polarizations" title="qnm_filter.sxs_helper.SXSWaveforms.harmonics_to_polarizations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">harmonics_to_polarizations</span></code></a>(attr_name, iota, ...)</p></td>
+<td><p>Compute two polarizations from GW harmonics stored in <cite>attr_name</cite></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.import_sxs_data" title="qnm_filter.sxs_helper.SXSWaveforms.import_sxs_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">import_sxs_data</span></code></a>(l, m, interpolate[, ...])</p></td>
+<td><p>Download/Load SXS waveforms.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.pad_data" title="qnm_filter.sxs_helper.SXSWaveforms.pad_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pad_data</span></code></a>(partition, len_pow)</p></td>
+<td><p>Pad zeros on both sides of GW harmonics <code class="xref py py-attr docutils literal notranslate"><span class="pre">self.original_data</span></code>, the final length is <img class="math" src="_images/math/585f67951250ff15d6d42626c97168c9eb9d208d.png" alt="2^{\textrm{len\_pow}}"/></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.scale_to_si" title="qnm_filter.sxs_helper.SXSWaveforms.scale_to_si"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scale_to_si</span></code></a>(attr_name, mass, distance)</p></td>
+<td><p>Convert GW waveforms stored in <cite>attr_name</cite> from numerical-relativity's units to SI units.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="qnm_filter.sxs_helper.SXSWaveforms.get_meta_data">
+<span class="sig-name descname"><span class="pre">get_meta_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">download</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/qnm_filter/sxs_helper.html#SXSWaveforms.get_meta_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.sxs_helper.SXSWaveforms.get_meta_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get meta data, including remnant mass and dimensionless spin.
+Note only spin’s length is returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>download</strong><span class="classifier">bool, optional</span></dt><dd><p>download meta data from SXS catalog if ture, by default False</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="qnm_filter.sxs_helper.SXSWaveforms.harmonics_to_polarizations">
+<span class="sig-name descname"><span class="pre">harmonics_to_polarizations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attr_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iota</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/qnm_filter/sxs_helper.html#SXSWaveforms.harmonics_to_polarizations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.sxs_helper.SXSWaveforms.harmonics_to_polarizations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute two polarizations from GW harmonics stored in <cite>attr_name</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>attr_name</strong><span class="classifier">string</span></dt><dd><p>the name of attribute</p>
+</dd>
+<dt><strong>iota</strong><span class="classifier">float</span></dt><dd><p>inclination angle of propagation direction, in rad.</p>
+</dd>
+<dt><strong>beta</strong><span class="classifier">float</span></dt><dd><p>azimuthal angle of propagation direction, in rad.</p>
+</dd>
+<dt><strong>model_list</strong><span class="classifier">a list of dictionaries</span></dt><dd><p>harmonics to be added</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>Dictionary</dt><dd><p>plus and cross polarizations</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="qnm_filter.sxs_helper.SXSWaveforms.import_sxs_data">
+<span class="sig-name descname"><span class="pre">import_sxs_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">l</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extrapolation_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">download</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ti</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_t</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/qnm_filter/sxs_helper.html#SXSWaveforms.import_sxs_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.sxs_helper.SXSWaveforms.import_sxs_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download/Load SXS waveforms.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>l</strong><span class="classifier">int</span></dt><dd><p>GW harmonic index</p>
+</dd>
+<dt><strong>m</strong><span class="classifier">int</span></dt><dd><p>GW harmonic index</p>
+</dd>
+<dt><strong>interpolate</strong><span class="classifier">bool</span></dt><dd><p>interpolate to desired time stamps if ture, otherwise use sxs’s original data</p>
+</dd>
+<dt><strong>extrapolation_order</strong><span class="classifier">int, optional</span></dt><dd><p>waveform extraploation order, used internally by <cite>sxs</cite>, by default 2</p>
+</dd>
+<dt><strong>download</strong><span class="classifier">bool, optional</span></dt><dd><p>download GWs from SXS catalog if ture, by default False</p>
+</dd>
+<dt><strong>ti</strong><span class="classifier">float, optional</span></dt><dd><p>the initial time of desired time stamps, use the first time stamp by default.
+The strain’s peak is assumed to be at 0.</p>
+</dd>
+<dt><strong>tf</strong><span class="classifier">float, optional</span></dt><dd><p>the final time of desired time stamps, use the last time stamp by default.
+The strain’s peak is assumed to be at 0.</p>
+</dd>
+<dt><strong>delta_t</strong><span class="classifier">float, optional</span></dt><dd><p>the step size of desired time stamps, use sxs’s original data by default,
+whose time stamps may not be even spacing</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>ValueError</dt><dd><p>when the time interpolator cannot find <cite>delta_t</cite></p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="qnm_filter.sxs_helper.SXSWaveforms.pad_data">
+<span class="sig-name descname"><span class="pre">pad_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">len_pow</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/qnm_filter/sxs_helper.html#SXSWaveforms.pad_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.sxs_helper.SXSWaveforms.pad_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pad zeros on both sides of GW harmonics <code class="xref py py-attr docutils literal notranslate"><span class="pre">self.original_data</span></code>,
+the final length is <img class="math" src="_images/math/585f67951250ff15d6d42626c97168c9eb9d208d.png" alt="2^{\textrm{len\_pow}}"/></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>partition</strong><span class="classifier">int</span></dt><dd><p>fraction of zeros to be padded on the left</p>
+</dd>
+<dt><strong>len_pow</strong><span class="classifier">int</span></dt><dd><p>the final length of padded data is <img class="math" src="_images/math/585f67951250ff15d6d42626c97168c9eb9d208d.png" alt="2^{\textrm{len\_pow}}"/></p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="qnm_filter.sxs_helper.SXSWaveforms.scale_to_si">
+<span class="sig-name descname"><span class="pre">scale_to_si</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attr_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/qnm_filter/sxs_helper.html#SXSWaveforms.scale_to_si"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.sxs_helper.SXSWaveforms.scale_to_si" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert GW waveforms stored in <cite>attr_name</cite> from numerical-relativity’s units to SI units.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>attr_name</strong><span class="classifier">string</span></dt><dd><p>the name of attribute</p>
+</dd>
+<dt><strong>mass</strong><span class="classifier">float</span></dt><dd><p>binary’s total mass, in solar mass. Not to be confused with the remnant mass.</p>
+</dd>
+<dt><strong>distance</strong><span class="classifier">float</span></dt><dd><p>binary’s luminous intensity, in MPC.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
 <section id="module-qnm_filter.utility">
 <span id="qnm-filter-utility-module"></span><h2>qnm_filter.utility module<a class="headerlink" href="#module-qnm_filter.utility" title="Permalink to this heading">¶</a></h2>
 <p>Useful functions for calculating and plotting data</p>
@@ -1267,6 +1577,30 @@ start time <code class="xref py py-attr docutils literal notranslate"><span clas
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt>ValueError</dt><dd><p>when the target log likelihood cannot be found.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="qnm_filter.utility.pad_data_for_fft">
+<span class="sig-prename descclassname"><span class="pre">qnm_filter.utility.</span></span><span class="sig-name descname"><span class="pre">pad_data_for_fft</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partition</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">len_pow</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/qnm_filter/utility.html#pad_data_for_fft"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.utility.pad_data_for_fft" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pad zeros on both sides of <cite>data</cite>, the final length is <img class="math" src="_images/math/585f67951250ff15d6d42626c97168c9eb9d208d.png" alt="2^{\textrm{len\_pow}}"/></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>data</strong><span class="classifier">Data</span></dt><dd><p>data to be padded</p>
+</dd>
+<dt><strong>partition</strong><span class="classifier">int</span></dt><dd><p>fraction of zeros to be padded on the left</p>
+</dd>
+<dt><strong>len_pow</strong><span class="classifier">int</span></dt><dd><p>the final length of padded data is <img class="math" src="_images/math/585f67951250ff15d6d42626c97168c9eb9d208d.png" alt="2^{\textrm{len\_pow}}"/></p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>Data</dt><dd><p>padded data</p>
 </dd>
 </dl>
 </dd>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>qnm_filter.sxs_helper &mdash; QNM Filter 0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            QNM Filter
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">QNM Filter</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">qnm_filter.sxs_helper</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for qnm_filter.sxs_helper</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Wrapping up some SXS (numerical relativity) functions for convenience</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;SXSWaveforms&quot;</span><span class="p">]</span>
+
+<span class="kn">from</span> <span class="nn">.gw_data</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.utility</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">sxs</span>
+<span class="kn">import</span> <span class="nn">lal</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">astropy.constants</span> <span class="k">as</span> <span class="nn">c</span>
+
+<span class="n">MPC</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">kpc</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mf">1e3</span> <span class="o">/</span> <span class="n">c</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">value</span>
+
+
+<div class="viewcode-block" id="SXSWaveforms"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.sxs_helper.SXSWaveforms">[docs]</a><span class="k">class</span> <span class="nc">SXSWaveforms</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kws</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">original_data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">padded_data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filtered_data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_in_si</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">kws</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filename&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mf</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chif</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="SXSWaveforms.import_sxs_data"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.sxs_helper.SXSWaveforms.import_sxs_data">[docs]</a>    <span class="k">def</span> <span class="nf">import_sxs_data</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">l</span><span class="p">,</span>
+        <span class="n">m</span><span class="p">,</span>
+        <span class="n">interpolate</span><span class="p">,</span>
+        <span class="n">extrapolation_order</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">download</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">ti</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">tf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">delta_t</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">waveform</span> <span class="o">=</span> <span class="n">sxs</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">+</span> <span class="s2">&quot;/Lev/rhOverM&quot;</span><span class="p">,</span>
+            <span class="n">extrapolation_order</span><span class="o">=</span><span class="n">extrapolation_order</span><span class="p">,</span>
+            <span class="n">download</span><span class="o">=</span><span class="n">download</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">tp</span> <span class="o">=</span> <span class="n">waveform</span><span class="o">.</span><span class="n">max_norm_time</span><span class="p">()</span>
+        <span class="n">waveform_lm</span> <span class="o">=</span> <span class="n">waveform</span><span class="p">[:,</span> <span class="n">waveform</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">m</span><span class="p">)]</span>
+
+        <span class="k">if</span> <span class="n">ti</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">t_interp_i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">t_interp_i</span> <span class="o">=</span> <span class="n">ti</span> <span class="o">+</span> <span class="n">tp</span>
+        <span class="k">if</span> <span class="n">tf</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">t_interp_f</span> <span class="o">=</span> <span class="n">waveform_lm</span><span class="o">.</span><span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">t_interp_f</span> <span class="o">=</span> <span class="n">tf</span> <span class="o">+</span> <span class="n">tp</span>
+
+        <span class="k">if</span> <span class="n">interpolate</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">delta_t</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid delta_t: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">delta_t</span><span class="p">))</span>
+
+            <span class="n">ts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">t_interp_i</span><span class="p">,</span> <span class="n">t_interp_f</span><span class="p">,</span> <span class="n">delta_t</span><span class="p">)</span>
+            <span class="n">interplated_waveform</span> <span class="o">=</span> <span class="n">waveform_lm</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">original_data</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">m</span><span class="p">)]</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span>
+                <span class="n">interplated_waveform</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">ts</span> <span class="o">-</span> <span class="n">tp</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">delta_t</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;delta_t: </span><span class="si">{}</span><span class="s2"> is not used&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">delta_t</span><span class="p">))</span>
+            <span class="n">index_i</span> <span class="o">=</span> <span class="n">waveform_lm</span><span class="o">.</span><span class="n">index_closest_to</span><span class="p">(</span><span class="n">t_interp_i</span><span class="p">)</span>
+            <span class="n">index_f</span> <span class="o">=</span> <span class="n">waveform_lm</span><span class="o">.</span><span class="n">index_closest_to</span><span class="p">(</span><span class="n">t_interp_f</span><span class="p">)</span>
+            <span class="n">waveform_lm_trunc</span> <span class="o">=</span> <span class="n">waveform_lm</span><span class="p">[</span><span class="n">index_i</span><span class="p">:</span><span class="n">index_f</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">original_data</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">m</span><span class="p">)]</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span>
+                <span class="n">waveform_lm_trunc</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">waveform_lm_trunc</span><span class="o">.</span><span class="n">t</span> <span class="o">-</span> <span class="n">tp</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="SXSWaveforms.get_meta_data"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.sxs_helper.SXSWaveforms.get_meta_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_meta_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">download</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">sxs</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">+</span> <span class="s2">&quot;/Lev/metadata.json&quot;</span><span class="p">,</span> <span class="n">download</span><span class="o">=</span><span class="n">download</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mf</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Overwriting mf: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mf</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">chif</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Overwriting chif: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">chif</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mf</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;remnant_mass&quot;</span><span class="p">]</span>
+        <span class="n">spinvec</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;remnant_dimensionless_spin&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chif</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">spinvec</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="SXSWaveforms.pad_data"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.sxs_helper.SXSWaveforms.pad_data">[docs]</a>    <span class="k">def</span> <span class="nf">pad_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">partition</span><span class="p">,</span> <span class="n">len_pow</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">lm</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">original_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">padded_data</span><span class="p">[</span><span class="n">lm</span><span class="p">]</span> <span class="o">=</span> <span class="n">pad_data_for_fft</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">partition</span><span class="p">,</span> <span class="n">len_pow</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SXSWaveforms.scale_to_si"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.sxs_helper.SXSWaveforms.scale_to_si">[docs]</a>    <span class="k">def</span> <span class="nf">scale_to_si</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">distance</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">lm</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">scaled_time</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">time</span> <span class="o">*</span> <span class="n">Filter</span><span class="o">.</span><span class="n">mass_unit</span><span class="p">(</span><span class="n">mass</span><span class="p">)</span>
+            <span class="n">scaled_waveform</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">values</span> <span class="o">*</span> <span class="n">Filter</span><span class="o">.</span><span class="n">mass_unit</span><span class="p">(</span><span class="n">mass</span><span class="p">)</span> <span class="o">/</span> <span class="n">distance</span> <span class="o">/</span> <span class="n">MPC</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data_in_si</span><span class="p">[</span><span class="n">lm</span><span class="p">]</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">scaled_waveform</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">scaled_time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SXSWaveforms.harmonics_to_polarizations"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.sxs_helper.SXSWaveforms.harmonics_to_polarizations">[docs]</a>    <span class="k">def</span> <span class="nf">harmonics_to_polarizations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">iota</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">model_list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">strain</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">model_list</span><span class="p">:</span>
+            <span class="n">ylm</span> <span class="o">=</span> <span class="n">lal</span><span class="o">.</span><span class="n">SpinWeightedSphericalHarmonic</span><span class="p">(</span><span class="n">iota</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+            <span class="n">strain</span> <span class="o">+=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)[</span><span class="nb">str</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">m</span><span class="p">)]</span> <span class="o">*</span> <span class="n">ylm</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)[</span><span class="nb">str</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">m</span><span class="p">)]</span><span class="o">.</span><span class="n">time</span>
+        <span class="n">ifo</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)[</span><span class="nb">str</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">m</span><span class="p">)]</span><span class="o">.</span><span class="n">ifo</span>
+        <span class="n">hp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">strain</span><span class="p">)</span>
+        <span class="n">hc</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">strain</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;plus&quot;</span><span class="p">:</span> <span class="n">Data</span><span class="p">(</span><span class="n">hp</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">),</span>
+            <span class="s2">&quot;cross&quot;</span><span class="p">:</span> <span class="n">Data</span><span class="p">(</span><span class="n">hc</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">),</span>
+        <span class="p">}</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Sizheng Ma.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
