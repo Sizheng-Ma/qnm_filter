@@ -20,7 +20,9 @@ pip install -e path/to/this/repository
 
 ## Examples
 
-A code demonstration of the rational filters can be found in [code_demo/Filter.ipynb](code_demo/Filter.ipynb), using GW150914.
+The analysis of GW150914 can be found in [code_demo/Filter.ipynb](code_demo/Filter.ipynb).
+
+Two injection systems with a numerical-relativity waveform (GW150914-like) are available at [code_demo/NRInjection_bilby.ipynb](code_demo/NRInjection_bilby.ipynb) and [code_demo/NRInjection_customized_noise.ipynb](code_demo/NRInjection_customized_noise.ipynb).
 
 ## Citations
 
