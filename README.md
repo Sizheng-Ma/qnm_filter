@@ -4,12 +4,6 @@ Ringdown analysis with rational filters. The details of the code package can be 
 
 ## Installation
 
-Install the latest version from the git repo:
-
-```shell
-pip install git+https://github.com/Sizheng-Ma/qnm_filter.git
-```
-
 Install this repository’s Python package in "editable mode":
 
 ```shell
