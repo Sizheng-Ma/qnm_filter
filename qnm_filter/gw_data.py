@@ -141,7 +141,6 @@ class Data(pd.Series):
         fhigh=None,
         trim=0.25,
         remove_mean=True,
-        **kwargs,
     ):
         """Condition data.
 
@@ -169,15 +168,15 @@ class Data(pd.Series):
             conditioned data object.
         """
 
-        srate = kwargs.pop("srate", srate)
-        flow = kwargs.pop("flow", flow)
         raw_data = self.values
         raw_time = self.index.values
 
-        ds = int(round(self.fft_span / srate))
+        if srate:
+            ds = int(round(self.fft_span / srate))
+        else:
+            ds = 1
 
         if t0 is not None:
-            ds = int(ds or 1)
             i = np.argmin(abs(raw_time - t0))
             raw_time = np.roll(raw_time, -(i % ds))
             raw_data = np.roll(raw_data, -(i % ds))
