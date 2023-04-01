@@ -182,6 +182,8 @@ class Network(object):
         data = {}
         i0s = self.first_index
         for i, d in network_data.items():
+            if abs(d.fft_span / self.srate - 1) > 1e-8:
+                raise ValueError("Sampling rate is not correct: {}".format(d.fft_span))
             data[i] = Data(d.iloc[i0s[i] : i0s[i] + self.sampling_n])
         return data
 
@@ -193,6 +195,8 @@ class Network(object):
         attr_name : string
             Name of data to be conditioned
         """
+        if ("srate" in kwargs) and (kwargs["srate"] != self.srate):
+            warnings.warn("The specified srate is not consistent with the stored srate")
         kwargs["srate"] = self.srate
         unconditioned_data = getattr(self, attr_name)
         for ifo, data in unconditioned_data.items():
@@ -222,6 +226,10 @@ class Network(object):
         """
         for ifo, acf in self.acfs.items():
             # TODO: Warning: this assumes acf has the same time step as data, which could go wrong.
+            if abs(acf.fft_span / self.srate - 1) > 1e-8:
+                raise ValueError(
+                    "Sampling rate is not correct: {}".format(acf.fft_span)
+                )
             truncated_acf = acf.iloc[: self.sampling_n].values
             L = np.linalg.cholesky(sl.toeplitz(truncated_acf))
             L_inv = np.linalg.inv(L)
