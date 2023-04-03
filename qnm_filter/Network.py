@@ -74,6 +74,7 @@ class Network(object):
         self.ra = kws.get("ra", None)
         self.dec = kws.get("dec", None)
         self.t_init = kws.get("t_init", None)
+        self.srate = kws.get("srate", None)
         self.window_width = kws.get("window_width", None)
 
     def import_ligo_data(self, filename) -> None:
@@ -158,19 +159,12 @@ class Network(object):
     def sampling_n(self) -> int:
         """Number of data points in analysis window.
 
-        Should be the same for all interferometers.
-
         Returns
         -------
-        Length of truncated data array
+        int
+            Lenght of truncated data array
         """
-        n_dict = {}
-        for ifo, data in self.original_data.items():
-            n_dict[ifo] = int(round(self.window_width / data.time_interval))
-        if len(set(n_dict.values())) > 1:
-            raise ValueError("Detectors have different sampling rates")
-
-        return list(n_dict.values())[0]
+        return int(round(self.window_width * self.srate))
 
     def truncate_data(self, network_data) -> dict:
         """Select segments of the given data that are in analysis window.
@@ -188,6 +182,8 @@ class Network(object):
         data = {}
         i0s = self.first_index
         for i, d in network_data.items():
+            if abs(d.fft_span / self.srate - 1) > 1e-8:
+                raise ValueError("Sampling rate is not correct: {}".format(d.fft_span))
             data[i] = Data(d.iloc[i0s[i] : i0s[i] + self.sampling_n])
         return data
 
@@ -199,6 +195,9 @@ class Network(object):
         attr_name : string
             Name of data to be conditioned
         """
+        if ("srate" in kwargs) and (kwargs["srate"] != self.srate):
+            warnings.warn("The specified srate is not consistent with the stored srate")
+        kwargs["srate"] = self.srate
         unconditioned_data = getattr(self, attr_name)
         for ifo, data in unconditioned_data.items():
             t0 = self.start_times[ifo]
@@ -227,6 +226,10 @@ class Network(object):
         """
         for ifo, acf in self.acfs.items():
             # TODO: Warning: this assumes acf has the same time step as data, which could go wrong.
+            if abs(acf.fft_span / self.srate - 1) > 1e-8:
+                raise ValueError(
+                    "Sampling rate is not correct: {}".format(acf.fft_span)
+                )
             truncated_acf = acf.iloc[: self.sampling_n].values
             L = np.linalg.cholesky(sl.toeplitz(truncated_acf))
             L_inv = np.linalg.inv(L)
