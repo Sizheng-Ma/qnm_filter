@@ -170,16 +170,6 @@ class Data(pd.Series):
         raw_data = self.values
         raw_time = self.index.values
 
-        if srate:
-            ds = int(round(self.fft_span / srate))
-        else:
-            ds = 1
-
-        if t0 is not None:
-            i = np.argmin(abs(raw_time - t0))
-            raw_time = np.roll(raw_time, -(i % ds))
-            raw_data = np.roll(raw_data, -(i % ds))
-
         fny = 0.5 * self.fft_span
         # Filter
         if flow and not fhigh:
@@ -195,6 +185,16 @@ class Data(pd.Series):
             cond_data = ss.filtfilt(b, a, raw_data)
         else:
             cond_data = raw_data
+
+        if srate:
+            ds = int(round(self.fft_span / srate))
+        else:
+            ds = 1
+
+        if t0 is not None:
+            i = np.argmin(abs(raw_time - t0))
+            raw_time = np.roll(raw_time, -(i % ds))
+            cond_data = np.roll(cond_data, -(i % ds))
 
         if ds and ds > 1:
             cond_data = ss.decimate(cond_data, ds, zero_phase=True)
