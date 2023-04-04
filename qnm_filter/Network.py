@@ -188,7 +188,7 @@ class Network(object):
         return data
 
     def condition_data(self, attr_name, **kwargs) -> None:
-        """Condition data for all interferometers.
+        """Condition data for all interferometers
 
         Parameters
         ----------
@@ -198,13 +198,11 @@ class Network(object):
         unconditioned_data = getattr(self, attr_name)
         for ifo, data in unconditioned_data.items():
             t0 = self.start_times[ifo]
-            getattr(self, attr_name)[ifo] = data.condition(
-                t0=t0,
-                srate=self.srate,
+            getattr(self, attr_name)[ifo] = data.digital_filter(
                 flow=kwargs.get("flow"),
                 fhigh=kwargs.get("fhigh"),
                 remove_mean=kwargs.get("remove_mean", True),
-            )
+            ).downsample(t0=t0, srate=self.srate)
 
     def compute_acfs(self, attr_name, **kws) -> None:
         """Compute ACFs with data named `attr_name`.
