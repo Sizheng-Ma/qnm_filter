@@ -205,6 +205,87 @@ class Data(pd.Series):
 
         return Data(cond_data, index=cond_time, ifo=self.ifo)
 
+    def digital_filter(
+        self,
+        flow=None,
+        fhigh=None,
+        remove_mean=True,
+    ):
+        """Apply digitial filters to condition data
+
+        Parameters
+        ----------
+        flow : float, optional
+            lower frequency for high passing, by default None
+        fhigh : float, optional
+            higher frequency for low passing, by default None
+        remove_mean : bool, optional
+            remove mean after conditioning, by default True
+
+        Returns
+        -------
+        Data
+            conditioned data
+        """
+
+        raw_data = self.values
+
+        fny = 0.5 * self.fft_span
+        # Filter
+        if flow and not fhigh:
+            b, a = ss.butter(4, flow / fny, btype="highpass", output="ba")
+        elif fhigh and not flow:
+            b, a = ss.butter(4, fhigh / fny, btype="lowpass", output="ba")
+        elif flow and fhigh:
+            b, a = ss.butter(
+                4, (flow / fny, fhigh / fny), btype="bandpass", output="ba"
+            )
+
+        if flow or fhigh:
+            cond_data = ss.filtfilt(b, a, raw_data)
+        else:
+            cond_data = raw_data
+
+        if remove_mean:
+            cond_data -= np.mean(cond_data)
+
+        return Data(cond_data, index=self.time, ifo=self.ifo)
+
+    def downsample(self, t0, srate):
+        """Downsample data
+
+        Credit: This function is from `git@github.com:maxisi/ringdown.git`
+
+        Parameters
+        ----------
+        t0 : float
+            target time to be preserved after downsampling
+        srate : float
+            sampling frequency after downsampling
+
+        Returns
+        -------
+        Data
+            downsampled data
+        """
+        raw_data = self.values
+        raw_time = self.time
+        if srate:
+            ds = int(round(self.fft_span / srate))
+        else:
+            ds = 1
+
+        if t0 is not None:
+            i = np.argmin(abs(raw_time - t0))
+            raw_time = np.roll(raw_time, -(i % ds))
+            raw_data = np.roll(raw_data, -(i % ds))
+
+        if ds and ds > 1:
+            raw_data = ss.decimate(raw_data, ds, zero_phase=True)
+            raw_time = raw_time[::ds]
+
+        return Data(raw_data, index=raw_time, ifo=self.ifo)
+
 
 class Noise:
     """Container for noise
