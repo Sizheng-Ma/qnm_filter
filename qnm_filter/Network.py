@@ -195,13 +195,17 @@ class Network(object):
         attr_name : string
             Name of data to be conditioned
         """
-        if ("srate" in kwargs) and (kwargs["srate"] != self.srate):
-            warnings.warn("The specified srate is not consistent with the stored srate")
-        kwargs["srate"] = self.srate
         unconditioned_data = getattr(self, attr_name)
         for ifo, data in unconditioned_data.items():
             t0 = self.start_times[ifo]
-            getattr(self, attr_name)[ifo] = data.condition(t0=t0, **kwargs)
+            getattr(self, attr_name)[ifo] = data.condition(
+                t0=t0,
+                srate=self.srate,
+                flow=kwargs.get("flow"),
+                fhigh=kwargs.get("fhigh"),
+                trim=kwargs.get("trim", 0.25),
+                remove_mean=kwargs.get("remove_mean", True),
+            )
 
     def compute_acfs(self, attr_name, **kws) -> None:
         """Compute ACFs with data named `attr_name`.
