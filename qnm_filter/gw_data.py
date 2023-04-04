@@ -139,7 +139,6 @@ class Data(pd.Series):
         srate=None,
         flow=None,
         fhigh=None,
-        trim=0.25,
         remove_mean=True,
     ):
         """Condition data.
@@ -200,13 +199,6 @@ class Data(pd.Series):
         if ds and ds > 1:
             cond_data = ss.decimate(cond_data, ds, zero_phase=True)
             cond_time = raw_time[::ds]
-
-        N = len(cond_data)
-        istart = int(round(trim * N))
-        iend = int(round((1 - trim) * N))
-
-        cond_time = cond_time[istart:iend]
-        cond_data = cond_data[istart:iend]
 
         if remove_mean:
             cond_data -= np.mean(cond_data)

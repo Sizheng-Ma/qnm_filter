@@ -203,7 +203,6 @@ class Network(object):
                 srate=self.srate,
                 flow=kwargs.get("flow"),
                 fhigh=kwargs.get("fhigh"),
-                trim=kwargs.get("trim", 0.25),
                 remove_mean=kwargs.get("remove_mean", True),
             )
 
