@@ -186,6 +186,9 @@ class Data(pd.Series):
         else:
             cond_data = raw_data
 
+        if remove_mean:
+            cond_data -= np.mean(cond_data)
+
         if srate:
             ds = int(round(self.fft_span / srate))
         else:
@@ -199,9 +202,6 @@ class Data(pd.Series):
         if ds and ds > 1:
             cond_data = ss.decimate(cond_data, ds, zero_phase=True)
             cond_time = raw_time[::ds]
-
-        if remove_mean:
-            cond_data -= np.mean(cond_data)
 
         return Data(cond_data, index=cond_time, ifo=self.ifo)
 
