@@ -48,8 +48,6 @@ class Network(object):
     start_times : dict
         dictionary containing trucation time (start time of analysis window)
         for each detector, determined by specified sky location.
-    cholesky_L : dict
-        dictionary containing Cholesky-decomposition of covariance matrix for each detector.
     inverse_cholesky_L : dict
         dictionary containing the inverse of Cholesky-decomposition.
     ra : float
@@ -68,7 +66,6 @@ class Network(object):
         self.filtered_data = {}
         self.acfs = {}
         self.start_times = {}
-        self.cholesky_L = {}
         self.inverse_cholesky_L = {}
 
         self.ra = kws.get("ra", None)
@@ -241,7 +238,6 @@ class Network(object):
             if abs(norm) > 1e-8:
                 raise ValueError("Inverse of L is not correct")
 
-            self.cholesky_L[ifo] = L
             self.inverse_cholesky_L[ifo] = L_inv
 
     def compute_likelihood(self, apply_filter=True) -> float:
