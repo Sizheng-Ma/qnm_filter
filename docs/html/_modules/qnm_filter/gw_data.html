@@ -207,7 +207,6 @@
         <span class="n">fhigh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">trim</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
         <span class="n">remove_mean</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Condition data.</span>
 
@@ -235,15 +234,15 @@
 <span class="sd">            conditioned data object.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">srate</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;srate&quot;</span><span class="p">,</span> <span class="n">srate</span><span class="p">)</span>
-        <span class="n">flow</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;flow&quot;</span><span class="p">,</span> <span class="n">flow</span><span class="p">)</span>
         <span class="n">raw_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span>
         <span class="n">raw_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
 
-        <span class="n">ds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_span</span> <span class="o">/</span> <span class="n">srate</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">srate</span><span class="p">:</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_span</span> <span class="o">/</span> <span class="n">srate</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="mi">1</span>
 
         <span class="k">if</span> <span class="n">t0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">ds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ds</span> <span class="ow">or</span> <span class="mi">1</span><span class="p">)</span>
             <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">raw_time</span> <span class="o">-</span> <span class="n">t0</span><span class="p">))</span>
             <span class="n">raw_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">raw_time</span><span class="p">,</span> <span class="o">-</span><span class="p">(</span><span class="n">i</span> <span class="o">%</span> <span class="n">ds</span><span class="p">))</span>
             <span class="n">raw_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">raw_data</span><span class="p">,</span> <span class="o">-</span><span class="p">(</span><span class="n">i</span> <span class="o">%</span> <span class="n">ds</span><span class="p">))</span>
