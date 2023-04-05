@@ -133,30 +133,53 @@ class Data(pd.Series):
         """FFT of gravitational-wave data."""
         return np.fft.rfft(self.values, norm="ortho")
 
-    def digital_filter(
+    def condition(
         self,
+        t0=None,
+        srate=None,
         flow=None,
         fhigh=None,
+        trim=0.25,
         remove_mean=True,
     ):
-        """Apply digitial filters to condition data
+        """Condition data.
 
-        Parameters
-        ----------
-        flow : float, optional
-            lower frequency for high passing, by default None
-        fhigh : float, optional
-            higher frequency for low passing, by default None
-        remove_mean : bool, optional
-            remove mean after conditioning, by default True
+        Credit: This function is from `git@github.com:maxisi/ringdown.git`.
+
+        Arguments
+        ---------
+        flow : float
+            lower frequency for high passing.
+        fhigh : float
+            higher frequency for low passing.
+        srate : int
+            sampling frequency after downsampling.
+        t0 : float
+            target time to be preserved after downsampling.
+        remove_mean : bool
+            explicitly remove mean from time series after conditioning.
+        trim : float
+            fraction of data to trim from edges after conditioning, to avoid
+            spectral issues if filtering.
 
         Returns
         -------
-        Data
-            conditioned data
+        cond_data : Data
+            conditioned data object.
         """
 
         raw_data = self.values
+        raw_time = self.index.values
+
+        if srate:
+            ds = int(round(self.fft_span / srate))
+        else:
+            ds = 1
+
+        if t0 is not None:
+            i = np.argmin(abs(raw_time - t0))
+            raw_time = np.roll(raw_time, -(i % ds))
+            raw_data = np.roll(raw_data, -(i % ds))
 
         fny = 0.5 * self.fft_span
         # Filter
@@ -174,45 +197,21 @@ class Data(pd.Series):
         else:
             cond_data = raw_data
 
+        if ds and ds > 1:
+            cond_data = ss.decimate(cond_data, ds, zero_phase=True)
+            cond_time = raw_time[::ds]
+
+        N = len(cond_data)
+        istart = int(round(trim * N))
+        iend = int(round((1 - trim) * N))
+
+        cond_time = cond_time[istart:iend]
+        cond_data = cond_data[istart:iend]
+
         if remove_mean:
             cond_data -= np.mean(cond_data)
 
-        return Data(cond_data, index=self.time, ifo=self.ifo)
-
-    def downsample(self, t0, srate):
-        """Downsample data
-
-        Credit: This function is from `git@github.com:maxisi/ringdown.git`
-
-        Parameters
-        ----------
-        t0 : float
-            target time to be preserved after downsampling
-        srate : float
-            sampling frequency after downsampling
-
-        Returns
-        -------
-        Data
-            downsampled data
-        """
-        raw_data = self.values
-        raw_time = self.time
-        if srate:
-            ds = int(round(self.fft_span / srate))
-        else:
-            ds = 1
-
-        if t0 is not None:
-            i = np.argmin(abs(raw_time - t0))
-            raw_time = np.roll(raw_time, -(i % ds))
-            raw_data = np.roll(raw_data, -(i % ds))
-
-        if ds and ds > 1:
-            raw_data = ss.decimate(raw_data, ds, zero_phase=True)
-            raw_time = raw_time[::ds]
-
-        return Data(raw_data, index=raw_time, ifo=self.ifo)
+        return Data(cond_data, index=cond_time, ifo=self.ifo)
 
 
 class Noise:
