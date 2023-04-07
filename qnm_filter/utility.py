@@ -54,6 +54,7 @@ def evidence_parallel(
     M_arr,
     chi_arr,
     num_cpu=-1,
+    apply_filter=True,
     verbosity=False,
     **kwargs,
 ):
@@ -88,10 +89,17 @@ def evidence_parallel(
     if verbosity:
         print(self.i0_dict)
     for time_iter in range(num_iteration):
-        results = Parallel(num_cpu)(
-            delayed(self.likelihood_vs_mass_spin)(i, j, **kwargs)
-            for i, j in flatten_array
-        )
+        if apply_filter:
+            results = Parallel(num_cpu)(
+                delayed(self.likelihood_vs_mass_spin)(i, j, **kwargs)
+                for i, j in flatten_array
+            )
+        else:
+            results = (
+                [self.compute_likelihood(apply_filter=False)]
+                * len(M_arr)
+                * len(chi_arr)
+            )
         log_evidence = logsumexp(results)
         saved_log_evidence.extend([log_evidence])
         self.shift_first_index(index_spacing)
