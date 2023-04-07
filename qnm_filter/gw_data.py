@@ -7,7 +7,7 @@ import qnm
 import pandas as pd
 import numpy as np
 import scipy.signal as ss
-import warnings
+import copy
 import bilby
 
 T_MSUN = c.M_sun.value * c.G.value / c.c.value**3
@@ -107,6 +107,20 @@ class Data(pd.Series):
     def __init__(self, *args, ifo=None, **kwargs):
         super(Data, self).__init__(*args, **kwargs)
         self.ifo = ifo
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, copy.deepcopy(v, memo))
+        return result
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        return result
 
     @property
     def time(self):
