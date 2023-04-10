@@ -34,6 +34,7 @@ class Network(object):
         fit.condition_data('original_data', **input)
         fit.compute_acfs('original_data')
         fit.cholesky_decomposition()
+        fit.first_index()
         fit.add_filter(mass=68.5, chi=0.69, **input)
         final_likelihood = fit.compute_likelihood(apply_filter=True)
 
@@ -50,6 +51,9 @@ class Network(object):
         for each detector, determined by specified sky location.
     inverse_cholesky_L : dict
         dictionary containing the inverse of Cholesky-decomposition.
+    i0_dict : dict
+        dictionary containing the array index of the first time of the analysis window.
+        The computation of :attr:`i0_dict` needs to be after the conditioning part.
     ra : float
         source right ascension, in radian.
     dec : float
@@ -67,6 +71,7 @@ class Network(object):
         self.acfs = {}
         self.start_times = {}
         self.inverse_cholesky_L = {}
+        self.i0_dict = {}
 
         self.ra = kws.get("ra", None)
         self.dec = kws.get("dec", None)
@@ -136,21 +141,17 @@ class Network(object):
             if not (data.time[0] < shifted_time < data.time[-1]):
                 raise ValueError("Invalid start time for {}".format(ifo))
 
-    @property
-    def first_index(self) -> dict:
+    def first_index(self):
         """Find the index of a data point that is closet to the choosen
-        start time :attr:`Network.start_times` for each interferometer.
-
-        Returns
-        -------
-        i0_dict : dictionary
-            dictionary containing the start indices for all interferometers.
-        """
-        i0_dict = {}
+        start time :attr:`Network.start_times` for each interferometer."""
         for ifo, data in self.original_data.items():
             t0 = self.start_times[ifo]
-            i0_dict[ifo] = abs(data.time - t0).argmin()
-        return i0_dict
+            self.i0_dict[ifo] = abs(data.time - t0).argmin()
+
+    def shift_first_index(self, n):
+        """Shift the first index of the analysis window by `n`."""
+        for ifo, _ in self.original_data.items():
+            self.i0_dict[ifo] += n
 
     @property
     def sampling_n(self) -> int:
@@ -177,7 +178,7 @@ class Network(object):
             Truncated GW data for all interferometers.
         """
         data = {}
-        i0s = self.first_index
+        i0s = self.i0_dict
         for i, d in network_data.items():
             if abs(d.fft_span / self.srate - 1) > 1e-8:
                 raise ValueError("Sampling rate is not correct: {}".format(d.fft_span))
