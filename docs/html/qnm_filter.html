@@ -51,11 +51,12 @@
 <li><a class="reference internal" href="#qnm_filter.Network.Network.compute_likelihood"><code class="docutils literal notranslate"><span class="pre">Network.compute_likelihood()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.Network.Network.condition_data"><code class="docutils literal notranslate"><span class="pre">Network.condition_data()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.Network.Network.detector_alignment"><code class="docutils literal notranslate"><span class="pre">Network.detector_alignment()</span></code></a></li>
-<li><a class="reference internal" href="#qnm_filter.Network.Network.first_index"><code class="docutils literal notranslate"><span class="pre">Network.first_index</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.Network.Network.first_index"><code class="docutils literal notranslate"><span class="pre">Network.first_index()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.Network.Network.import_data_array"><code class="docutils literal notranslate"><span class="pre">Network.import_data_array()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.Network.Network.import_ligo_data"><code class="docutils literal notranslate"><span class="pre">Network.import_ligo_data()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.Network.Network.likelihood_vs_mass_spin"><code class="docutils literal notranslate"><span class="pre">Network.likelihood_vs_mass_spin()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.Network.Network.sampling_n"><code class="docutils literal notranslate"><span class="pre">Network.sampling_n</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.Network.Network.shift_first_index"><code class="docutils literal notranslate"><span class="pre">Network.shift_first_index()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.Network.Network.truncate_data"><code class="docutils literal notranslate"><span class="pre">Network.truncate_data()</span></code></a></li>
 </ul>
 </li>
@@ -114,6 +115,7 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#module-qnm_filter.utility">qnm_filter.utility module</a><ul>
+<li><a class="reference internal" href="#qnm_filter.utility.evidence_parallel"><code class="docutils literal notranslate"><span class="pre">evidence_parallel()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.utility.find_credible_region"><code class="docutils literal notranslate"><span class="pre">find_credible_region()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.utility.pad_data_for_fft"><code class="docutils literal notranslate"><span class="pre">pad_data_for_fft()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.utility.parallel_compute"><code class="docutils literal notranslate"><span class="pre">parallel_compute()</span></code></a></li>
@@ -181,6 +183,7 @@
 <span class="n">fit</span><span class="o">.</span><span class="n">condition_data</span><span class="p">(</span><span class="s1">&#39;original_data&#39;</span><span class="p">,</span> <span class="o">**</span><span class="nb">input</span><span class="p">)</span>
 <span class="n">fit</span><span class="o">.</span><span class="n">compute_acfs</span><span class="p">(</span><span class="s1">&#39;original_data&#39;</span><span class="p">)</span>
 <span class="n">fit</span><span class="o">.</span><span class="n">cholesky_decomposition</span><span class="p">()</span>
+<span class="n">fit</span><span class="o">.</span><span class="n">first_index</span><span class="p">()</span>
 <span class="n">fit</span><span class="o">.</span><span class="n">add_filter</span><span class="p">(</span><span class="n">mass</span><span class="o">=</span><span class="mf">68.5</span><span class="p">,</span> <span class="n">chi</span><span class="o">=</span><span class="mf">0.69</span><span class="p">,</span> <span class="o">**</span><span class="nb">input</span><span class="p">)</span>
 <span class="n">final_likelihood</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">compute_likelihood</span><span class="p">(</span><span class="n">apply_filter</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
@@ -197,9 +200,10 @@
 <dt><strong>start_times</strong><span class="classifier">dict</span></dt><dd><p>dictionary containing trucation time (start time of analysis window)
 for each detector, determined by specified sky location.</p>
 </dd>
-<dt><strong>cholesky_L</strong><span class="classifier">dict</span></dt><dd><p>dictionary containing Cholesky-decomposition of covariance matrix for each detector.</p>
-</dd>
 <dt><strong>inverse_cholesky_L</strong><span class="classifier">dict</span></dt><dd><p>dictionary containing the inverse of Cholesky-decomposition.</p>
+</dd>
+<dt><strong>i0_dict</strong><span class="classifier">dict</span></dt><dd><p>dictionary containing the array index of the first time of the analysis window.
+The computation of <code class="xref py py-attr docutils literal notranslate"><span class="pre">i0_dict</span></code> needs to be after the conditioning part.</p>
 </dd>
 <dt><strong>ra</strong><span class="classifier">float</span></dt><dd><p>source right ascension, in radian.</p>
 </dd>
@@ -236,14 +240,20 @@ for each detector, determined by specified sky location.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.detector_alignment" title="qnm_filter.Network.Network.detector_alignment"><code class="xref py py-obj docutils literal notranslate"><span class="pre">detector_alignment</span></code></a>(**kwargs)</p></td>
 <td><p>Set the start times of analysis window at different interferometers <code class="xref py py-attr docutils literal notranslate"><span class="pre">Network.start_times</span></code> using sky location.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.import_data_array" title="qnm_filter.Network.Network.import_data_array"><code class="xref py py-obj docutils literal notranslate"><span class="pre">import_data_array</span></code></a>(attr_name, data, time, ifo)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.first_index" title="qnm_filter.Network.Network.first_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">first_index</span></code></a>()</p></td>
+<td><p>Find the index of a data point that is closet to the choosen start time <code class="xref py py-attr docutils literal notranslate"><span class="pre">Network.start_times</span></code> for each interferometer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.import_data_array" title="qnm_filter.Network.Network.import_data_array"><code class="xref py py-obj docutils literal notranslate"><span class="pre">import_data_array</span></code></a>(attr_name, data, time, ifo)</p></td>
 <td><p>Add the inputted data to a dynamic/existing attribute.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.import_ligo_data" title="qnm_filter.Network.Network.import_ligo_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">import_ligo_data</span></code></a>(filename)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.import_ligo_data" title="qnm_filter.Network.Network.import_ligo_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">import_ligo_data</span></code></a>(filename)</p></td>
 <td><p>Read data from disk and store data in <code class="xref py py-attr docutils literal notranslate"><span class="pre">Network.original_data</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.likelihood_vs_mass_spin" title="qnm_filter.Network.Network.likelihood_vs_mass_spin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">likelihood_vs_mass_spin</span></code></a>(M_est, chi_est, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.likelihood_vs_mass_spin" title="qnm_filter.Network.Network.likelihood_vs_mass_spin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">likelihood_vs_mass_spin</span></code></a>(M_est, chi_est, **kwargs)</p></td>
 <td><p>Compute likelihood for the given mass and spin.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.shift_first_index" title="qnm_filter.Network.Network.shift_first_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shift_first_index</span></code></a>(n)</p></td>
+<td><p>Shift the first index of the analysis window by <cite>n</cite>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.truncate_data" title="qnm_filter.Network.Network.truncate_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">truncate_data</span></code></a>(network_data)</p></td>
 <td><p>Select segments of the given data that are in analysis window.</p></td>
@@ -341,19 +351,11 @@ interferometers <code class="xref py py-attr docutils literal notranslate"><span
 </dl>
 </dd></dl>
 
-<dl class="py property">
+<dl class="py method">
 <dt class="sig sig-object py" id="qnm_filter.Network.Network.first_index">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">first_index</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#qnm_filter.Network.Network.first_index" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">first_index</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/Network.html#Network.first_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.Network.Network.first_index" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find the index of a data point that is closet to the choosen
 start time <code class="xref py py-attr docutils literal notranslate"><span class="pre">Network.start_times</span></code> for each interferometer.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>i0_dict</strong><span class="classifier">dictionary</span></dt><dd><p>dictionary containing the start indices for all interferometers.</p>
-</dd>
-</dl>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -416,14 +418,20 @@ start time <code class="xref py py-attr docutils literal notranslate"><span clas
 <dt class="sig sig-object py" id="qnm_filter.Network.Network.sampling_n">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sampling_n</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#qnm_filter.Network.Network.sampling_n" title="Permalink to this definition">¶</a></dt>
 <dd><p>Number of data points in analysis window.</p>
-<p>Should be the same for all interferometers.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt>Length of truncated data array</dt><dd></dd>
+<dt>int</dt><dd><p>Lenght of truncated data array</p>
+</dd>
 </dl>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="qnm_filter.Network.Network.shift_first_index">
+<span class="sig-name descname"><span class="pre">shift_first_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/Network.html#Network.shift_first_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.Network.Network.shift_first_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shift the first index of the analysis window by <cite>n</cite>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1167,7 +1175,7 @@ start time <code class="xref py py-attr docutils literal notranslate"><span clas
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="qnm_filter.gw_data.Data.condition">
-<span class="sig-name descname"><span class="pre">condition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">srate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fhigh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/gw_data.html#Data.condition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.gw_data.Data.condition" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">condition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">srate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fhigh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/gw_data.html#Data.condition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.gw_data.Data.condition" title="Permalink to this definition">¶</a></dt>
 <dd><p>Condition data.</p>
 <p>Credit: This function is from <cite>git&#64;github.com:maxisi/ringdown.git</cite>.</p>
 <dl class="field-list simple">
@@ -1581,6 +1589,39 @@ the final length is <img class="math" src="_images/math/585f67951250ff15d6d42626
 <section id="module-qnm_filter.utility">
 <span id="qnm-filter-utility-module"></span><h2>qnm_filter.utility module<a class="headerlink" href="#module-qnm_filter.utility" title="Permalink to this heading">¶</a></h2>
 <p>Useful functions for calculating and plotting data</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="qnm_filter.utility.evidence_parallel">
+<span class="sig-prename descclassname"><span class="pre">qnm_filter.utility.</span></span><span class="sig-name descname"><span class="pre">evidence_parallel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index_spacing</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_iteration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_offset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M_arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chi_arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cpu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbosity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/utility.html#evidence_parallel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.utility.evidence_parallel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute evidence curve, which is sampled at multiples of the post-downsampling rate <cite>self.srate</cite>,
+therefore there is no need to recondition the data set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>index_spacing</strong><span class="classifier">int</span></dt><dd><p>the ratio between <cite>self.srate</cite> and the evidence’s sampling rate</p>
+</dd>
+<dt><strong>num_iteration</strong><span class="classifier">int</span></dt><dd><p>number of sampling points for the evidence curve</p>
+</dd>
+<dt><strong>initial_offset</strong><span class="classifier">int</span></dt><dd><p>the index offset of the first evidence data point with respect to <cite>self.i0_dict</cite></p>
+</dd>
+<dt><strong>M_arr</strong><span class="classifier">array-like</span></dt><dd><p>array of the values of remnant mass to calculate the likelihood function for</p>
+</dd>
+<dt><strong>chi_arr</strong><span class="classifier">array-like</span></dt><dd><p>array of the values of remnant spin to calculate the likelihood function for</p>
+</dd>
+<dt><strong>num_cpu</strong><span class="classifier">int, optional</span></dt><dd><p>integer to be based to Parallel as n_jobs. NOTE: passing a positive integer leads to better performance than -1 but performance differs across machines, by default -1</p>
+</dd>
+<dt><strong>verbosity</strong><span class="classifier">bool, optional</span></dt><dd><p>print more information, by default False</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>Two arrays</dt><dd><p>time stamps, log-evidence</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="qnm_filter.utility.find_credible_region">
 <span class="sig-prename descclassname"><span class="pre">qnm_filter.utility.</span></span><span class="sig-name descname"><span class="pre">find_credible_region</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array2d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cpu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_probability</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.9</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/utility.html#find_credible_region"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.utility.find_credible_region" title="Permalink to this definition">¶</a></dt>

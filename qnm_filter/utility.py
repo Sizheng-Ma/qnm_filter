@@ -5,6 +5,7 @@ __all__ = [
     "find_credible_region",
     "project_to_1d",
     "pad_data_for_fft",
+    "evidence_parallel",
 ]
 
 from .gw_data import *
@@ -42,7 +43,73 @@ def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
         delayed(self.likelihood_vs_mass_spin)(i, j, **kwargs) for i, j in flatten_array
     )
     reshaped_results = np.reshape(results, (len(M_arr), len(chi_arr))).T
-    return reshaped_results
+    return reshaped_results, logsumexp(reshaped_results)
+
+
+def evidence_parallel(
+    self,
+    index_spacing,
+    num_iteration,
+    initial_offset,
+    M_arr,
+    chi_arr,
+    num_cpu=-1,
+    apply_filter=True,
+    verbosity=False,
+    **kwargs,
+):
+    """Compute evidence curve, which is sampled at multiples of the post-downsampling rate `self.srate`,
+    therefore there is no need to recondition the data set.
+
+    Parameters
+    ----------
+    index_spacing : int
+        the ratio between `self.srate` and the evidence's sampling rate
+    num_iteration : int
+        number of sampling points for the evidence curve
+    initial_offset : int
+        the index offset of the first evidence data point with respect to `self.i0_dict`
+    M_arr : array-like
+        array of the values of remnant mass to calculate the likelihood function for
+    chi_arr : array-like
+        array of the values of remnant spin to calculate the likelihood function for
+    num_cpu : int, optional
+        integer to be based to Parallel as n_jobs. NOTE: passing a positive integer leads to better performance than -1 but performance differs across machines, by default -1
+    verbosity : bool, optional
+        print more information, by default False
+
+    Returns
+    -------
+    Two arrays
+        time stamps, log-evidence
+    """
+    flatten_array = [(i, j) for i in M_arr for j in chi_arr]
+    saved_log_evidence = []
+    self.shift_first_index(initial_offset)
+    if verbosity:
+        print(self.i0_dict)
+    for time_iter in range(num_iteration):
+        if apply_filter:
+            results = Parallel(num_cpu)(
+                delayed(self.likelihood_vs_mass_spin)(i, j, **kwargs)
+                for i, j in flatten_array
+            )
+        else:
+            results = (
+                [self.compute_likelihood(apply_filter=False)]
+                * len(M_arr)
+                * len(chi_arr)
+            )
+        log_evidence = logsumexp(results)
+        saved_log_evidence.extend([log_evidence])
+        self.shift_first_index(index_spacing)
+        if verbosity:
+            print(time_iter)
+    t_array = (
+        self.t_init
+        + (initial_offset + np.arange(num_iteration)) * index_spacing / self.srate
+    )
+    return t_array, np.array(saved_log_evidence)
 
 
 def find_probability_difference(threshold, array2d, target_probability=0.9):
