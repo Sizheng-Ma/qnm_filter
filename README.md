@@ -14,11 +14,9 @@ pip install -e path/to/this/repository
 
 ## Examples
 
-The analysis of GW150914 can be found in [code_demo/Filter.ipynb](code_demo/Filter.ipynb).
-
-Two injection systems with a numerical-relativity waveform (GW150914-like) are available at [code_demo/NRInjection_bilby.ipynb](code_demo/NRInjection_bilby.ipynb) and [code_demo/NRInjection_customized_noise.ipynb](code_demo/NRInjection_customized_noise.ipynb).
-
-The evidence curve is a useful tool for determining the statistical significance of a quasinormal mode and for limiting its start time. An example is at [code_demo/Evidence.ipynb](code_demo/Evidence.ipynb).
+1. The analysis of GW150914 can be found in [code_demo/Filter.ipynb](code_demo/Filter.ipynb).
+2. Two injection systems with a numerical-relativity waveform (GW150914-like) are available at [code_demo/NRInjection_bilby.ipynb](code_demo/NRInjection_bilby.ipynb) and [code_demo/NRInjection_customized_noise.ipynb](code_demo/NRInjection_customized_noise.ipynb).
+3. The evidence curve is a useful tool for determining the statistical significance of a quasinormal mode and for limiting its start time. An example is at [code_demo/Evidence.ipynb](code_demo/Evidence.ipynb).
 
 ## Cite this code
 
