@@ -213,7 +213,7 @@ class Data(pd.Series):
 
         if ds and ds > 1:
             cond_data = ss.decimate(cond_data, ds, zero_phase=True)
-            cond_time = raw_time[::ds]
+        cond_time = raw_time[::ds]
 
         N = len(cond_data)
         istart = int(round(trim * N))
