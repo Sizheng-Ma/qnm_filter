@@ -107,7 +107,7 @@ def evidence_parallel(
             print(time_iter)
     t_array = (
         self.t_init
-        + (initial_offset + np.arange(num_iteration)) * index_spacing / self.srate
+        + (initial_offset + np.arange(num_iteration) * index_spacing) / self.srate
     )
     return t_array, np.array(saved_log_evidence)
 
