@@ -179,7 +179,7 @@
             <span class="n">flow</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span>
 <span class="n">fit</span> <span class="o">=</span> <span class="n">qnm_filter</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="o">**</span><span class="nb">input</span><span class="p">)</span>
 <span class="n">fit</span><span class="o">.</span><span class="n">import_data</span><span class="p">(</span><span class="s1">&#39;H-H1_GWOSC_16KHZ_R1-1126259447-32.hdf5&#39;</span><span class="p">)</span>
-<span class="n">fit</span><span class="o">.</span><span class="n">detector_alignment</span><span class="p">(</span><span class="o">**</span><span class="nb">input</span><span class="p">)</span>
+<span class="n">fit</span><span class="o">.</span><span class="n">detector_alignment</span><span class="p">()</span>
 <span class="n">fit</span><span class="o">.</span><span class="n">condition_data</span><span class="p">(</span><span class="s1">&#39;original_data&#39;</span><span class="p">,</span> <span class="o">**</span><span class="nb">input</span><span class="p">)</span>
 <span class="n">fit</span><span class="o">.</span><span class="n">compute_acfs</span><span class="p">(</span><span class="s1">&#39;original_data&#39;</span><span class="p">)</span>
 <span class="n">fit</span><span class="o">.</span><span class="n">cholesky_decomposition</span><span class="p">()</span>
@@ -237,7 +237,7 @@ The computation of <code class="xref py py-attr docutils literal notranslate"><s
 <tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.condition_data" title="qnm_filter.Network.Network.condition_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">condition_data</span></code></a>(attr_name, **kwargs)</p></td>
 <td><p>Condition data for all interferometers.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.detector_alignment" title="qnm_filter.Network.Network.detector_alignment"><code class="xref py py-obj docutils literal notranslate"><span class="pre">detector_alignment</span></code></a>(**kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.detector_alignment" title="qnm_filter.Network.Network.detector_alignment"><code class="xref py py-obj docutils literal notranslate"><span class="pre">detector_alignment</span></code></a>()</p></td>
 <td><p>Set the start times of analysis window at different interferometers <code class="xref py py-attr docutils literal notranslate"><span class="pre">Network.start_times</span></code> using sky location.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.first_index" title="qnm_filter.Network.Network.first_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">first_index</span></code></a>()</p></td>
@@ -338,17 +338,9 @@ and the inverse of <img class="math" src="_images/math/19eef1966f7c545af3ac8c0fa
 
 <dl class="py method">
 <dt class="sig sig-object py" id="qnm_filter.Network.Network.detector_alignment">
-<span class="sig-name descname"><span class="pre">detector_alignment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/qnm_filter/Network.html#Network.detector_alignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.Network.Network.detector_alignment" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">detector_alignment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/qnm_filter/Network.html#Network.detector_alignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.Network.Network.detector_alignment" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the start times of analysis window at different
 interferometers <code class="xref py py-attr docutils literal notranslate"><span class="pre">Network.start_times</span></code> using sky location.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>t_init</strong><span class="classifier">float</span></dt><dd><p>The start time of analysis window at the geocenter.</p>
-</dd>
-</dl>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -1591,7 +1583,7 @@ the final length is <img class="math" src="_images/math/585f67951250ff15d6d42626
 <p>Useful functions for calculating and plotting data</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="qnm_filter.utility.evidence_parallel">
-<span class="sig-prename descclassname"><span class="pre">qnm_filter.utility.</span></span><span class="sig-name descname"><span class="pre">evidence_parallel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index_spacing</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_iteration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_offset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M_arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chi_arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cpu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbosity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/utility.html#evidence_parallel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.utility.evidence_parallel" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">qnm_filter.utility.</span></span><span class="sig-name descname"><span class="pre">evidence_parallel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index_spacing</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_iteration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_offset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M_arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chi_arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cpu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbosity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/utility.html#evidence_parallel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.utility.evidence_parallel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute evidence curve, which is sampled at multiples of the post-downsampling rate <cite>self.srate</cite>,
 therefore there is no need to recondition the data set.</p>
 <dl class="field-list simple">
