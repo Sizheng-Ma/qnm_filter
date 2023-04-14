@@ -30,7 +30,7 @@ class Network(object):
                     flow = 20)
         fit = qnm_filter.Network(**input)
         fit.import_data('H-H1_GWOSC_16KHZ_R1-1126259447-32.hdf5')
-        fit.detector_alignment(**input)
+        fit.detector_alignment()
         fit.condition_data('original_data', **input)
         fit.compute_acfs('original_data')
         fit.cholesky_decomposition()
@@ -116,27 +116,21 @@ class Network(object):
         """
         getattr(self, attr_name)[ifo] = Data(data, index=time, ifo=ifo)
 
-    def detector_alignment(self, **kwargs) -> None:
+    def detector_alignment(self) -> None:
         """Set the start times of analysis window at different
         interferometers :attr:`Network.start_times` using sky location.
-
-        Parameters
-        ----------
-        t_init : float
-            The start time of analysis window at the geocenter.
         """
-        t_init = kwargs.pop("t_init", None)
-        if t_init == None:
+        if self.t_init == None:
             raise ValueError("t_init is not provided")
-        tgps = lal.LIGOTimeGPS(t_init)
+        tgps = lal.LIGOTimeGPS(self.t_init)
 
         for ifo, data in self.original_data.items():
             if self.ra == None or self.dec == None:
-                shifted_time = t_init
+                shifted_time = self.t_init
             else:
                 location = lal.cached_detector_by_prefix[ifo].location
                 dt_ifo = lal.TimeDelayFromEarthCenter(location, self.ra, self.dec, tgps)
-                shifted_time = t_init + dt_ifo
+                shifted_time = self.t_init + dt_ifo
             self.start_times[ifo] = shifted_time
             if not (data.time[0] < shifted_time < data.time[-1]):
                 raise ValueError("Invalid start time for {}".format(ifo))
