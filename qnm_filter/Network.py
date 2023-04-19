@@ -145,7 +145,7 @@ class Network(object):
     def shift_first_index(self, n):
         """Shift the first index of the analysis window by `n`."""
         for ifo, _ in self.original_data.items():
-            self.i0_dict[ifo] += n
+            self.i0_dict[ifo] += int(n)
 
     @property
     def sampling_n(self) -> int:
@@ -235,11 +235,13 @@ class Network(object):
 
             self.inverse_cholesky_L[ifo] = L_inv
 
-    def compute_likelihood(self, apply_filter=True) -> float:
+    def compute_likelihood(self, offset, apply_filter=True) -> float:
         """Compute likelihood for interferometer network.
 
         Arguments
         ---------
+        offset : int
+            offset from the index of t_init to compute the likelihood for.
         apply_filter : bool
             option to apply rational filters (default True).
 
@@ -249,6 +251,8 @@ class Network(object):
             The likelihood of interferometer network
         """
         likelihood = 0
+        self.first_index()
+        self.shift_first_index(offset)
 
         if not apply_filter:
             truncation = self.truncate_data(self.original_data)
@@ -272,11 +276,13 @@ class Network(object):
             )
             self.filtered_data[ifo] = Data(ifft, index=data.index, ifo=ifo)
 
-    def likelihood_vs_mass_spin(self, M_est, chi_est, **kwargs) -> float:
+    def likelihood_vs_mass_spin(self, offset, M_est, chi_est, **kwargs) -> float:
         """Compute likelihood for the given mass and spin.
 
         Parameters
         ----------
+        offset : int
+            offset from the index of t_init to compute the likelihood for.
         M_est : float
             in solar mass, mass of rational filters
         chi_est : float
@@ -288,7 +294,7 @@ class Network(object):
         """
         model_list = kwargs.pop("model_list")
         self.add_filter(mass=M_est, chi=chi_est, model_list=model_list)
-        return self.compute_likelihood(apply_filter=True)
+        return self.compute_likelihood(offset, apply_filter=True)
 
     def compute_SNR(self, data, template, ifo, optimal) -> float:
         """Compute matched-filter/optimal SNR.
