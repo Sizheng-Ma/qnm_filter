@@ -55,20 +55,77 @@ class Filter:
         """Convert mass unit from solar mass to second."""
         return mass * T_MSUN
 
-    def single_filter(self, normalized_freq, l, m, n):
-        """Compute rational filters.
+    def pos_filter(self, normalized_freq, l, m, n):
+        r"""The positive rational filter:
+
+        .. math::
+            \frac{\omega-\omega_{lmn}}{\omega-\omega_{lmn}^*}
 
         Parameters
         ----------
         normalized_freq : array
             in remnant mass, frequencies that rational filters are evaluated at.
+        l : int
+            angular index
+        m : int
+            angular index
+        n : int
+            overtone index
+
+        Returns
+        -------
+        array
         """
         omega = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
-        return (
-            (normalized_freq - omega)
-            / (normalized_freq - np.conj(omega))
-            * (normalized_freq + np.conj(omega))
-            / (normalized_freq + omega)
+        return (normalized_freq - omega) / (normalized_freq - np.conj(omega))
+
+    def neg_filter(self, normalized_freq, l, m, n):
+        r"""The negative rational filter:
+
+        .. math::
+            \frac{\omega+\omega_{lmn}^*}{\omega+\omega_{lmn}}
+
+        Parameters
+        ----------
+        normalized_freq : array
+            in remnant mass, frequencies that rational filters are evaluated at.
+        l : int
+            angular index
+        m : int
+            angular index
+        n : int
+            overtone index
+
+        Returns
+        -------
+        array
+        """
+        omega = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
+        return (normalized_freq + np.conj(omega)) / (normalized_freq + omega)
+
+    def single_filter(self, normalized_freq, l, m, n):
+        r"""A combination of the negative and postive rational filters
+
+        .. math::
+            \frac{\omega-\omega_{lmn}}{\omega-\omega_{lmn}^*}\frac{\omega+\omega_{lmn}^*}{\omega+\omega_{lmn}}
+
+        Parameters
+        ----------
+        normalized_freq : array
+            in remnant mass, frequencies that rational filters are evaluated at.
+        l : int
+            angular index
+        m : int
+            angular index
+        n : int
+            overtone index
+
+        Returns
+        -------
+        array
+        """
+        return self.neg_filter(normalized_freq, l, m, n) * self.pos_filter(
+            normalized_freq, l, m, n
         )
 
     def total_filter(self, freq):
