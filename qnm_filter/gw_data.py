@@ -1,6 +1,6 @@
 """Utilities to manipulate GW data and rational filters.
 """
-__all__ = ["Data", "Filter", "Noise"]
+__all__ = ["RealData", "Filter", "Noise"]
 
 import astropy.constants as c
 import qnm
@@ -152,17 +152,17 @@ class Filter:
         return final_rational_filter
 
 
-class Data(pd.Series):
-    """Container for gravitational data.
+class DataBase(pd.Series):
+    """A Base container for time-domain gravitational data
 
-    Attributes
+    Parameters
     ----------
     ifo : str
         name of interferometer.
     """
 
     def __init__(self, *args, ifo=None, **kwargs):
-        super(Data, self).__init__(*args, **kwargs)
+        super(DataBase, self).__init__(*args, **kwargs)
         self.ifo = ifo
 
     def __deepcopy__(self, memo):
@@ -193,6 +193,16 @@ class Data(pd.Series):
     def fft_span(self) -> float:
         """Span of FFT."""
         return 1.0 / self.time_interval
+
+
+class RealData(DataBase):
+    """Container for real-valued time-domain gravitational data.
+
+    Parameters
+    ----------
+    ifo : str
+        name of interferometer.
+    """
 
     @property
     def fft_freq(self):
@@ -282,7 +292,7 @@ class Data(pd.Series):
         if remove_mean:
             cond_data -= np.mean(cond_data)
 
-        return Data(cond_data, index=cond_time, ifo=self.ifo)
+        return RealData(cond_data, index=cond_time, ifo=self.ifo)
 
 
 class Noise:
@@ -306,16 +316,16 @@ class Noise:
         self.ifo = ifo
         if "psd" in kwargs:
             freq = kwargs.pop("freq")
-            self.psd = Data(kwargs.get("psd"), index=freq, ifo=ifo)
+            self.psd = RealData(kwargs.get("psd"), index=freq, ifo=ifo)
         if "asd" in kwargs:
             freq = kwargs.pop("freq")
-            self.asd = Data(kwargs.get("asd"), index=freq, ifo=ifo)
+            self.asd = RealData(kwargs.get("asd"), index=freq, ifo=ifo)
         if "acf" in kwargs:
             time = kwargs.pop("time")
-            self.acf = Data(kwargs.get("acf"), index=time, ifo=ifo)
+            self.acf = RealData(kwargs.get("acf"), index=time, ifo=ifo)
         if "signal" in kwargs:
             time = kwargs.pop("time")
-            self.signal = Data(kwargs.get("signal"), index=time, ifo=ifo)
+            self.signal = RealData(kwargs.get("signal"), index=time, ifo=ifo)
 
     def load_noise_curve(self, attr_name, filename, ifo=None):
         """Read a txt/dat file and store the data in target attribute
@@ -332,7 +342,7 @@ class Noise:
         """
         filereader = np.loadtxt(filename)
         setattr(
-            self, attr_name, Data(filereader[:, 1], index=filereader[:, 0], ifo=ifo)
+            self, attr_name, RealData(filereader[:, 1], index=filereader[:, 0], ifo=ifo)
         )
 
     def __psd_to_acf(self, psd):
@@ -350,16 +360,16 @@ class Noise:
         """
         fs = 2 * (psd.index[-1] - psd.index[0])
         rho = 0.5 * np.fft.irfft(psd) * fs
-        return Data(rho, index=np.arange(len(rho)) / fs, ifo=self.ifo)
+        return RealData(rho, index=np.arange(len(rho)) / fs, ifo=self.ifo)
 
     def from_psd(self):
         """Compute ASD and ACF from PSD"""
-        self.asd = Data(np.sqrt(self.psd.values), index=self.psd.time, ifo=self.ifo)
+        self.asd = RealData(np.sqrt(self.psd.values), index=self.psd.time, ifo=self.ifo)
         self.acf = self.__psd_to_acf(self.psd)
 
     def from_asd(self):
         """Compute PSD and ACF from ASD"""
-        self.psd = Data(self.asd.values**2, index=self.asd.time, ifo=self.ifo)
+        self.psd = RealData(self.asd.values**2, index=self.asd.time, ifo=self.ifo)
         self.acf = self.__psd_to_acf(self.psd)
 
     def from_acf(self):
@@ -369,7 +379,7 @@ class Noise:
         psd_temp = 2 * dt * np.fft.rfft(self.acf)
         # TODO: This could go wrong. PSD is supposed to be real. Better way?
         psd_temp = np.real(psd_temp)
-        self.psd = Data(psd_temp, index=freq_samp, ifo=self.ifo)
+        self.psd = RealData(psd_temp, index=freq_samp, ifo=self.ifo)
         self.asd = np.sqrt(self.psd)
 
     def welch(self, **kws):
@@ -378,7 +388,7 @@ class Noise:
         nperseg = fs / kws.get("sampling_rate", 1)
 
         freq, psd = ss.welch(self.signal, fs=fs, nperseg=nperseg)
-        self.psd = Data(psd, index=freq, ifo=self.ifo)
+        self.psd = RealData(psd, index=freq, ifo=self.ifo)
 
     @property
     def bilby_psd(self):
