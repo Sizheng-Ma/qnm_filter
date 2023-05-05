@@ -108,7 +108,7 @@ class SXSWaveforms:
 
             ts = np.arange(t_interp_i, t_interp_f, delta_t)
             interplated_waveform = waveform_lm.interpolate(ts).data
-            self.original_data[str(l) + str(m)] = Data(
+            self.original_data[str(l) + str(m)] = RealData(
                 interplated_waveform, index=ts - tp
             )
         else:
@@ -117,7 +117,7 @@ class SXSWaveforms:
             index_i = waveform_lm.index_closest_to(t_interp_i)
             index_f = waveform_lm.index_closest_to(t_interp_f)
             waveform_lm_trunc = waveform_lm[index_i:index_f]
-            self.original_data[str(l) + str(m)] = Data(
+            self.original_data[str(l) + str(m)] = RealData(
                 waveform_lm_trunc.data, index=waveform_lm_trunc.t - tp
             )
 
@@ -192,7 +192,9 @@ class SXSWaveforms:
         for lm, data in getattr(self, attr_name).items():
             scaled_time = data.time * Filter.mass_unit(mass)
             scaled_waveform = data.values * Filter.mass_unit(mass) / distance / MPC
-            self.data_in_si[lm] = Data(scaled_waveform, index=scaled_time, ifo=data.ifo)
+            self.data_in_si[lm] = RealData(
+                scaled_waveform, index=scaled_time, ifo=data.ifo
+            )
 
     def harmonics_to_polarizations(self, attr_name, iota, beta, model_list) -> None:
         """Compute two polarizations from GW harmonics stored in `attr_name`
@@ -222,6 +224,6 @@ class SXSWaveforms:
         hp = np.real(strain)
         hc = -np.imag(strain)
         return {
-            "plus": Data(hp, index=time, ifo=ifo),
-            "cross": Data(hc, index=time, ifo=ifo),
+            "plus": RealData(hp, index=time, ifo=ifo),
+            "cross": RealData(hc, index=time, ifo=ifo),
         }
