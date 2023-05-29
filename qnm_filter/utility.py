@@ -15,9 +15,10 @@ import numpy as np
 from scipy.special import logsumexp
 from scipy.optimize import fsolve
 from scipy.interpolate import interp1d
+from sklearn.utils.extmath import cartesian
 
 
-def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
+def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, offset = 0, **kwargs):
     """Parallel computation of a function that takes 2 arguments
 
     Arguments
@@ -30,6 +31,8 @@ def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
         array of the values of remnant spin to calculate the likelihood function for.
     num_cpu : int
         integer to be based to Parallel as n_jobs. NOTE: passing a positive integer leads to better performance than -1 but performance differs across machines.
+    offset : integer
+        offset from the index of t_init to compute the likelihood function for.
     kwargs : dict
         dictionary of kwargs of the function
 
@@ -40,7 +43,7 @@ def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
     """
     flatten_array = [(i, j) for i in M_arr for j in chi_arr]
     results = Parallel(num_cpu)(
-        delayed(self.likelihood_vs_mass_spin)(i, j, **kwargs) for i, j in flatten_array
+        delayed(self.likelihood_vs_mass_spin)(offset, i, j, **kwargs) for i, j in flatten_array
     )
     reshaped_results = np.reshape(results, (len(M_arr), len(chi_arr))).T
     return reshaped_results, logsumexp(reshaped_results)
@@ -48,14 +51,11 @@ def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
 
 def evidence_parallel(
     self,
-    index_spacing,
-    num_iteration,
-    initial_offset,
+    offset_arr,
     M_arr,
     chi_arr,
     num_cpu=-1,
     apply_filter=True,
-    verbosity=False,
     **kwargs,
 ):
     """Compute evidence curve, which is sampled at multiples of the post-downsampling rate `self.srate`,
@@ -63,12 +63,8 @@ def evidence_parallel(
 
     Parameters
     ----------
-    index_spacing : int
-        the ratio between `self.srate` and the evidence's sampling rate
-    num_iteration : int
-        number of sampling points for the evidence curve
-    initial_offset : int
-        the index offset of the first evidence data point with respect to `self.i0_dict`
+    offset_arr : array-like
+        array of offset indexes (w.r.t the index of t_init) to calculate the evidence for
     M_arr : array-like
         array of the values of remnant mass to calculate the likelihood function for
     chi_arr : array-like
@@ -83,33 +79,23 @@ def evidence_parallel(
     Two arrays
         time stamps, log-evidence
     """
-    flatten_array = [(i, j) for i in M_arr for j in chi_arr]
-    saved_log_evidence = []
-    self.shift_first_index(initial_offset)
-    if verbosity:
-        print(self.i0_dict)
-    for time_iter in range(num_iteration):
-        if apply_filter:
-            results = Parallel(num_cpu)(
-                delayed(self.likelihood_vs_mass_spin)(i, j, **kwargs)
-                for i, j in flatten_array
-            )
-        else:
-            results = (
-                [self.compute_likelihood(apply_filter=False)]
-                * len(M_arr)
-                * len(chi_arr)
-            )
-        log_evidence = logsumexp(results)
-        saved_log_evidence.extend([log_evidence])
-        self.shift_first_index(index_spacing)
-        if verbosity:
-            print(time_iter)
+    flatten_array = cartesian((offset_arr, M_arr, chi_arr))
+    if apply_filter:
+        results = Parallel(num_cpu)(
+            delayed(self.likelihood_vs_mass_spin)(offset, M, chi, **kwargs)
+            for offset, M, chi in flatten_array
+        )
+    else:
+        results = np.array(
+            [[self.compute_likelihood(offset, apply_filter=False)] * len(M_arr)
+            * len(chi_arr) for offset in offset_arr])
+    results = np.reshape(results, (len(offset_arr), len(M_arr), len(chi_arr)))
+    log_evidence = logsumexp(results, axis = (1,2))
     t_array = (
         self.t_init
-        + (initial_offset + np.arange(num_iteration) * index_spacing) / self.srate
+        + offset_arr / self.srate
     )
-    return t_array, np.array(saved_log_evidence)
+    return t_array, np.array(log_evidence)
 
 
 def find_probability_difference(threshold, array2d, target_probability=0.9):
