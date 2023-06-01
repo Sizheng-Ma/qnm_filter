@@ -201,8 +201,10 @@ class Data(pd.Series):
 
     @property
     def fft_data(self):
-        """FFT of gravitational-wave data."""
-        return np.fft.rfft(self.values, norm="ortho")
+        """FFT of gravitational-wave data with a Tukey window applied."""
+        time_len = self.time[-1] - self.time[0] 
+        windowed_signal = ss.windows.tukey(len(self.values), alpha = 2/time_len)*self.values
+        return np.fft.rfft(windowed_signal, norm="ortho")
 
     def condition(
         self,
