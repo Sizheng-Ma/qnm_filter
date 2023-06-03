@@ -221,9 +221,9 @@ def project_to_1d(array2d, delta_mass, delta_chi):
     Two ndarrays
         probability density functions of mass and spin, both normalized to a total probability of 1.
     """
-    evidence = logsumexp(array2d)
-    normalized_mass = np.exp(logsumexp(array2d, axis=0) - evidence)
-    normalized_chi = np.exp(logsumexp(array2d, axis=1) - evidence)
+    log_evidence = logsumexp(array2d)
+    normalized_mass = np.exp(logsumexp(array2d, axis=0) - log_evidence)
+    normalized_chi = np.exp(logsumexp(array2d, axis=1) - log_evidence)
 
     normalized_mass /= np.sum(normalized_mass * delta_mass)
     normalized_chi /= np.sum(normalized_chi * delta_chi)
