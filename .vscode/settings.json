@@ -1,7 +1,0 @@
-{
-    "python.formatting.provider": "none",
-    "git-blame.gitWebUrl": "",
-    "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter"
-    }
-}
