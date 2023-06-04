@@ -131,8 +131,11 @@ def find_probability_difference(threshold, array2d, target_probability=0.9):
     """
     tot = logsumexp(array2d)
     region = array2d[array2d > threshold]
-    region_tot = logsumexp(region)
-    prob = region_tot - tot
+    if region.size == 0:
+        prob = 0
+    else:
+        region_tot = logsumexp(region)
+        prob = region_tot - tot
     return prob - np.log(target_probability)
 
 
@@ -155,7 +158,7 @@ def sampling_probability(array2d, num_cpu=-1, target_probability=0.9):
     sorted_probability : ndarray
         difference between log probability and log target_probability.
     """
-    sorted_array = np.sort(array2d.flatten())[:-1]
+    sorted_array = np.sort(array2d.flatten())
 
     sorted_probability = Parallel(num_cpu)(
         delayed(find_probability_difference)(i, array2d, target_probability)
@@ -199,7 +202,8 @@ def find_credible_region(array2d, num_cpu=-1, target_probability=0.9):
     result = fsolve(interp_probability, initial_guess)
     root_distance = interp_probability(result)
     if abs(root_distance) > 1e-8:
-        raise ValueError("Cannot find the root: {}".format(root_distance))
+        warnings.warn("Cannot find the root, root distance was {} and so the \
+        credible region estimate will be poor".format(root_distance))
     return result
 
 
