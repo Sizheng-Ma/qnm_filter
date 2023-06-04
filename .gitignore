@@ -130,3 +130,6 @@ dmypy.json
 
 # HDF5 files
 *.hdf5
+
+# Others
+.vscode
