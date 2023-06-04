@@ -154,7 +154,7 @@ class Network(object):
         Returns
         -------
         int
-            Lenght of truncated data array
+            Length of truncated data array
         """
         return int(round(self.window_width * self.srate))
 
@@ -221,7 +221,10 @@ class Network(object):
         and the inverse of :math:`L`.
         """
         for ifo, acf in self.acfs.items():
-            # TODO: Warning: this assumes acf has the same time step as data, which could go wrong.
+            if self.sampling_n > len(self.acfs[ifo])/2:
+                raise ValueError(
+                    "The sampling_n is more than half the acf length"
+                )   
             if abs(acf.fft_span / self.srate - 1) > 1e-8:
                 raise ValueError(
                     "Sampling rate is not correct: {}".format(acf.fft_span)
