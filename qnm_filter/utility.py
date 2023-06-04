@@ -15,6 +15,7 @@ import numpy as np
 from scipy.special import logsumexp
 from scipy.optimize import fsolve
 from scipy.interpolate import interp1d
+import warnings
 
 
 def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
