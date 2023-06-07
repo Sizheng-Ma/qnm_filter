@@ -195,17 +195,10 @@ def find_credible_region(array2d, num_cpu=-1, target_probability=0.9):
     sorted_likelihood, sorted_probability = sampling_probability(
         array2d, num_cpu, target_probability
     )
-    # the minimum distance corresponds to the initial guess
-    initial_guess = sorted_likelihood[abs(sorted_probability).argmin()]
 
     # interpolation is preferred when the sample density is insufficient
-    interp_probability = interp1d(sorted_likelihood, sorted_probability)
-    result = fsolve(interp_probability, initial_guess)
-    root_distance = interp_probability(result)
-    if abs(root_distance) > 1e-8:
-        warnings.warn("Cannot find the root, root distance was {} and so the \
-        credible region estimate will be poor".format(root_distance))
-    return result
+    interp_probability = interp1d(sorted_probability, sorted_likelihood)
+    return interp_probability(0)
 
 
 def project_to_1d(array2d, delta_mass, delta_chi):
