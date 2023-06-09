@@ -188,6 +188,11 @@ class Data(pd.Series):
     def time_interval(self) -> float:
         """Interval of the time stamps."""
         return self.index[1] - self.index[0]
+    
+    @property
+    def apply_tukey(self, alpha=0.2):
+        """Apply the Tukey window to the data"""
+        return ss.windows.tukey(len(self.values), alpha = alpha)*self.values
 
     @property
     def fft_span(self) -> float:
@@ -204,11 +209,14 @@ class Data(pd.Series):
         """FFT of gravitational-wave data."""
         return np.fft.rfft(self.values, norm="ortho")
     
-    @property
-    def fft_data_windowed(self):
+    def fft_data_windowed(self, window = 'Tukey'):
         """FFT of gravitational-wave data with a Tukey window applied."""
-        time_len = self.time[-1] - self.time[0] 
-        windowed_signal = ss.windows.tukey(len(self.values), alpha = 2/time_len)*self.values
+        if window == 'Tukey':
+            windowed_signal = self.apply_tukey
+        elif window == None:
+            windowed_signal = self.values
+        else:
+            raise ValueError('That is not a FFT window that has been implemented.')
         return np.fft.rfft(windowed_signal, norm="ortho")
 
     def condition(
@@ -383,8 +391,9 @@ class Noise:
         """Estimate PSD from data using Welch's method."""
         fs = self.signal.fft_span
         nperseg = fs / kws.get("sampling_rate", 1)
+        window = kws.get("window", None)
 
-        freq, psd = ss.welch(self.signal, fs=fs, nperseg=nperseg)
+        freq, psd = ss.welch(self.signal, fs=fs, nperseg=nperseg, window=window)
         self.psd = Data(psd, index=freq, ifo=self.ifo)
 
     @property

@@ -199,7 +199,7 @@ class Network(object):
                 remove_mean=kwargs.get("remove_mean", True),
             )
 
-    def compute_acfs(self, attr_name, **kws) -> None:
+    def compute_acfs(self, attr_name, alpha=0.2, **kws) -> None:
         """Compute ACFs with data named `attr_name`.
 
         Parameters
@@ -212,7 +212,8 @@ class Network(object):
             warnings.warn("Overwriting ACFs")
         for ifo, data in noisy_data.items():
             noise = Noise(time=data.time, signal=data.values)
-            noise.welch(**kws)
+            window = ss.windows.tukey(len(data), alpha = alpha)
+            noise.welch(window=window, **kws)
             noise.from_psd()
             self.acfs[ifo] = noise.acf
 
@@ -276,7 +277,7 @@ class Network(object):
         """Apply rational filters to :attr:`Network.original_data` and store
         the filtered data in :attr:`Network.filtered_data`."""
         for ifo, data in self.original_data.items():
-            data_in_freq = data.fft_data_windowed
+            data_in_freq = data.fft_data_windowed(window='Tukey')
             freq = data.fft_freq
             filter_in_freq = Filter(**kwargs).total_filter(freq)
             ifft = np.fft.irfft(
