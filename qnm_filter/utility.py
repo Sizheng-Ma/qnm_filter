@@ -7,6 +7,7 @@ __all__ = [
     "pad_data_for_fft",
     "evidence_parallel",
     "sampling_probability",
+    "OLD_find_credible_region",
 ]
 
 from .gw_data import *
@@ -200,6 +201,45 @@ def find_credible_region(array2d, num_cpu=-1, target_probability=0.9):
     # interpolation is preferred when the sample density is insufficient
     interp_probability = interp1d(sorted_probability, sorted_likelihood)
     return interp_probability(0)
+
+def OLD_find_credible_region(array2d, num_cpu=-1, target_probability=0.9):
+    """Compute the log likelihood contour that encloses the desired probability.
+
+    Parameters
+    ----------
+    array2d : ndarray
+        2D array of sampling log likelihood as a function of mass and spin
+    num_cpu : int, optional
+        number of CPUs used for parallelization, by default -1
+    target_probability : float, optional
+        desired probability, by default 0.9
+
+    Returns
+    -------
+    result : float
+        the log likelihood above which has the desired probability.
+
+    Raises
+    ------
+    ValueError
+        when the target log likelihood cannot be found.
+    """
+    # iterate over the inputted log likelihoods and compute the distance of their log probability from the desired value.
+    sorted_likelihood, sorted_probability = sampling_probability(
+        array2d, num_cpu, target_probability
+    )
+    
+    # the minimum distance corresponds to the initial guess
+    initial_guess = sorted_likelihood[abs(sorted_probability).argmin()]
+
+    # interpolation is preferred when the sample density is insufficient
+    interp_probability = interp1d(sorted_likelihood, sorted_probability)
+    result = fsolve(interp_probability, initial_guess)
+    root_distance = interp_probability(result)
+    if abs(root_distance) > 1e-8:
+        warnings.warn("Cannot find the root, root distance was {} and so the \
+        credible region estimate will be poor".format(root_distance))
+    return result
 
 
 def project_to_1d(array2d, delta_mass, delta_chi):
