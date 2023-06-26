@@ -49,8 +49,8 @@ class Network(object):
     start_times : dict
         dictionary containing trucation time (start time of analysis segment)
         for each detector, determined by specified sky location.
-    inverse_cholesky_L : dict
-        dictionary containing the inverse of Cholesky-decomposition.
+    cholesky_L : dict
+        dictionary containing Cholesky factorizations of detectors.
     i0_dict : dict
         dictionary containing the array index of the first time of the analysis segment.
         The computation of :attr:`i0_dict` needs to be after the conditioning part.
@@ -70,7 +70,7 @@ class Network(object):
         self.filtered_data = {}
         self.acfs = {}
         self.start_times = {}
-        self.inverse_cholesky_L = {}
+        self.cholesky_L = {}
         self.i0_dict = {}
 
         self.ra = kws.get("ra", None)
@@ -221,22 +221,15 @@ class Network(object):
         and the inverse of :math:`L`.
         """
         for ifo, acf in self.acfs.items():
-            if self.sampling_n > len(self.acfs[ifo])/2:
-                raise ValueError(
-                    "The sampling_n is more than half the acf length"
-                )   
+            if self.sampling_n > len(self.acfs[ifo]) / 2:
+                raise ValueError("The sampling_n is more than half the acf length")
             if abs(acf.fft_span / self.srate - 1) > 1e-8:
                 raise ValueError(
                     "Sampling rate is not correct: {}".format(acf.fft_span)
                 )
             truncated_acf = acf.iloc[: self.sampling_n].values
             L = np.linalg.cholesky(sl.toeplitz(truncated_acf))
-            L_inv = np.linalg.inv(L)
-            norm = np.sqrt(np.sum(abs(np.dot(L_inv, L) - np.identity(len(L))) ** 2))
-            if abs(norm) > 1e-8:
-                raise ValueError("Inverse of L is not correct")
-
-            self.inverse_cholesky_L[ifo] = L_inv
+            self.cholesky_L[ifo] = L
 
     def compute_likelihood(self, apply_filter=True) -> float:
         """Compute likelihood for interferometer network.
@@ -259,8 +252,8 @@ class Network(object):
             truncation = self.truncate_data(self.filtered_data)
 
         for ifo, data in truncation.items():
-            wd = np.dot(self.inverse_cholesky_L[ifo], data)
-            likelihood -= 0.5 * np.dot(wd, wd)
+            wd = sl.cho_solve((self.cholesky_L[ifo], True), data)
+            likelihood -= 0.5 * np.dot(data, wd)
         return likelihood
 
     def add_filter(self, **kwargs):
@@ -307,11 +300,10 @@ class Network(object):
         optimal: bool
             Compute optimal SNR
         """
-        template_w = np.dot(self.inverse_cholesky_L[ifo], template)
-        data_w = np.dot(self.inverse_cholesky_L[ifo], data)
-        snr_opt = np.sqrt(np.dot(template_w, template_w))
+        template_w = sl.cho_solve((self.cholesky_L[ifo], True), template)
+        snr_opt = np.sqrt(np.dot(template, template_w))
         if optimal:
             return snr_opt
         else:
-            snr = np.dot(data_w, template_w) / snr_opt
+            snr = np.dot(data, template_w) / snr_opt
             return snr
