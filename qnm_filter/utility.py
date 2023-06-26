@@ -6,6 +6,8 @@ __all__ = [
     "project_to_1d",
     "pad_data_for_fft",
     "evidence_parallel",
+    "save_class",
+    "load_class",
 ]
 
 from .gw_data import *
@@ -16,6 +18,7 @@ from scipy.special import logsumexp
 from scipy.optimize import fsolve
 from scipy.interpolate import interp1d
 import warnings
+import pickle
 
 
 def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
@@ -203,8 +206,12 @@ def find_credible_region(array2d, num_cpu=-1, target_probability=0.9):
     result = fsolve(interp_probability, initial_guess)
     root_distance = interp_probability(result)
     if abs(root_distance) > 1e-8:
-        warnings.warn("Cannot find the root, root distance was {} and so the \
-        credible region estimate will be poor".format(root_distance))
+        warnings.warn(
+            "Cannot find the root, root distance was {} and so the \
+        credible region estimate will be poor".format(
+                root_distance
+            )
+        )
     return result
 
 
@@ -271,3 +278,33 @@ def pad_data_for_fft(data, partition, len_pow) -> None:
         end_values=(end2, end1),
     )
     return Data(data_pad, index=tpad)
+
+
+def save_class(cls, filename):
+    """Dump a class object to a file
+
+    Parameters
+    ----------
+    filename : string
+        the file name to be dumped
+    """
+    with open(filename, "wb") as file:
+        pickle.dump(cls, file)
+
+
+def load_class(filename):
+    """Read a class object from a file
+
+    Parameters
+    ----------
+    filename : string
+        the file name to be read
+
+    Returns
+    -------
+    fit
+        class object saved in the file
+    """
+    with open(filename, "rb") as file:
+        fit = pickle.load(file)
+    return fit
