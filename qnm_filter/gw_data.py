@@ -204,6 +204,11 @@ class Data(pd.Series):
         """FFT of gravitational-wave data."""
         return np.fft.rfft(self.values, norm="ortho")
 
+    def add_tukey(self, alpha):
+        """Add a Tukey window in the time domain"""
+        windowed_signal = ss.windows.tukey(len(self.values), alpha=alpha) * self.values
+        return Data(windowed_signal, index=self.index.values, ifo=self.ifo)
+
     def condition(
         self,
         t0=None,

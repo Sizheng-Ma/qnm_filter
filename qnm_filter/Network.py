@@ -221,10 +221,8 @@ class Network(object):
         and the inverse of :math:`L`.
         """
         for ifo, acf in self.acfs.items():
-            if self.sampling_n > len(self.acfs[ifo])/2:
-                raise ValueError(
-                    "The sampling_n is more than half the acf length"
-                )   
+            if self.sampling_n > len(self.acfs[ifo]) / 2:
+                raise ValueError("The sampling_n is more than half the acf length")
             if abs(acf.fft_span / self.srate - 1) > 1e-8:
                 raise ValueError(
                     "Sampling rate is not correct: {}".format(acf.fft_span)
@@ -237,6 +235,17 @@ class Network(object):
                 raise ValueError("Inverse of L is not correct")
 
             self.inverse_cholesky_L[ifo] = L_inv
+
+    def add_tukey_windows(self, alpha) -> None:
+        """Add Tukey windows to :attr:`Network.original_data`
+
+        Parameters
+        ----------
+        alpha : float
+            The parameter for the Tukey window
+        """
+        for ifo, data in self.original_data.items():
+            self.original_data[ifo] = data.add_tukey(alpha)
 
     def compute_likelihood(self, apply_filter=True) -> float:
         """Compute likelihood for interferometer network.
