@@ -72,6 +72,8 @@
     <span class="s2">&quot;project_to_1d&quot;</span><span class="p">,</span>
     <span class="s2">&quot;pad_data_for_fft&quot;</span><span class="p">,</span>
     <span class="s2">&quot;evidence_parallel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;save_class&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;load_class&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="kn">from</span> <span class="nn">.gw_data</span> <span class="kn">import</span> <span class="o">*</span>
@@ -81,6 +83,8 @@
 <span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">logsumexp</span>
 <span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">fsolve</span>
 <span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">interp1d</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
 
 
 <div class="viewcode-block" id="parallel_compute"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.utility.parallel_compute">[docs]</a><span class="k">def</span> <span class="nf">parallel_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">M_arr</span><span class="p">,</span> <span class="n">chi_arr</span><span class="p">,</span> <span class="n">num_cpu</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -173,7 +177,7 @@
             <span class="nb">print</span><span class="p">(</span><span class="n">time_iter</span><span class="p">)</span>
     <span class="n">t_array</span> <span class="o">=</span> <span class="p">(</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">t_init</span>
-        <span class="o">+</span> <span class="p">(</span><span class="n">initial_offset</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">num_iteration</span><span class="p">))</span> <span class="o">*</span> <span class="n">index_spacing</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">srate</span>
+        <span class="o">+</span> <span class="p">(</span><span class="n">initial_offset</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">num_iteration</span><span class="p">)</span> <span class="o">*</span> <span class="n">index_spacing</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">srate</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">t_array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">saved_log_evidence</span><span class="p">)</span></div>
 
@@ -197,8 +201,11 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">tot</span> <span class="o">=</span> <span class="n">logsumexp</span><span class="p">(</span><span class="n">array2d</span><span class="p">)</span>
     <span class="n">region</span> <span class="o">=</span> <span class="n">array2d</span><span class="p">[</span><span class="n">array2d</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">]</span>
-    <span class="n">region_tot</span> <span class="o">=</span> <span class="n">logsumexp</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
-    <span class="n">prob</span> <span class="o">=</span> <span class="n">region_tot</span> <span class="o">-</span> <span class="n">tot</span>
+    <span class="k">if</span> <span class="n">region</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">prob</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">region_tot</span> <span class="o">=</span> <span class="n">logsumexp</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+        <span class="n">prob</span> <span class="o">=</span> <span class="n">region_tot</span> <span class="o">-</span> <span class="n">tot</span>
     <span class="k">return</span> <span class="n">prob</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">target_probability</span><span class="p">)</span>
 
 
@@ -221,7 +228,7 @@
 <span class="sd">    sorted_probability : ndarray</span>
 <span class="sd">        difference between log probability and log target_probability.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">sorted_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">array2d</span><span class="o">.</span><span class="n">flatten</span><span class="p">())[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">sorted_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">array2d</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
 
     <span class="n">sorted_probability</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">num_cpu</span><span class="p">)(</span>
         <span class="n">delayed</span><span class="p">(</span><span class="n">find_probability_difference</span><span class="p">)(</span><span class="n">i</span><span class="p">,</span> <span class="n">array2d</span><span class="p">,</span> <span class="n">target_probability</span><span class="p">)</span>
@@ -265,7 +272,12 @@
     <span class="n">result</span> <span class="o">=</span> <span class="n">fsolve</span><span class="p">(</span><span class="n">interp_probability</span><span class="p">,</span> <span class="n">initial_guess</span><span class="p">)</span>
     <span class="n">root_distance</span> <span class="o">=</span> <span class="n">interp_probability</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">root_distance</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-8</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot find the root: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">root_distance</span><span class="p">))</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;Cannot find the root, root distance was </span><span class="si">{}</span><span class="s2"> and so the </span><span class="se">\</span>
+<span class="s2">        credible region estimate will be poor&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">root_distance</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
     <span class="k">return</span> <span class="n">result</span></div>
 
 
@@ -287,9 +299,9 @@
 <span class="sd">    Two ndarrays</span>
 <span class="sd">        probability density functions of mass and spin, both normalized to a total probability of 1.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">evidence</span> <span class="o">=</span> <span class="n">logsumexp</span><span class="p">(</span><span class="n">array2d</span><span class="p">)</span>
-    <span class="n">normalized_mass</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">array2d</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="n">evidence</span><span class="p">)</span>
-    <span class="n">normalized_chi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">array2d</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">evidence</span><span class="p">)</span>
+    <span class="n">log_evidence</span> <span class="o">=</span> <span class="n">logsumexp</span><span class="p">(</span><span class="n">array2d</span><span class="p">)</span>
+    <span class="n">normalized_mass</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">array2d</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="n">log_evidence</span><span class="p">)</span>
+    <span class="n">normalized_chi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">array2d</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">log_evidence</span><span class="p">)</span>
 
     <span class="n">normalized_mass</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">normalized_mass</span> <span class="o">*</span> <span class="n">delta_mass</span><span class="p">)</span>
     <span class="n">normalized_chi</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">normalized_chi</span> <span class="o">*</span> <span class="n">delta_chi</span><span class="p">)</span>
@@ -332,6 +344,36 @@
         <span class="n">end_values</span><span class="o">=</span><span class="p">(</span><span class="n">end2</span><span class="p">,</span> <span class="n">end1</span><span class="p">),</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">Data</span><span class="p">(</span><span class="n">data_pad</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">tpad</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="save_class"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.utility.save_class">[docs]</a><span class="k">def</span> <span class="nf">save_class</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dump a class object to a file</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    filename : string</span>
+<span class="sd">        the file name to be dumped</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="load_class"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.utility.load_class">[docs]</a><span class="k">def</span> <span class="nf">load_class</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read a class object from a file</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    filename : string</span>
+<span class="sd">        the file name to be read</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fit</span>
+<span class="sd">        class object saved in the file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+        <span class="n">fit</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fit</span></div>
 </pre></div>
 
            </div>
