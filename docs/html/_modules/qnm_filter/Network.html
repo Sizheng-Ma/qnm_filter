@@ -220,7 +220,7 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        int</span>
-<span class="sd">            Lenght of truncated data array</span>
+<span class="sd">            Length of truncated data array</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_width</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">srate</span><span class="p">))</span>
 
@@ -287,7 +287,10 @@
 <span class="sd">        and the inverse of :math:`L`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">ifo</span><span class="p">,</span> <span class="n">acf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">acfs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="c1"># TODO: Warning: this assumes acf has the same time step as data, which could go wrong.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampling_n</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acfs</span><span class="p">[</span><span class="n">ifo</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;The sampling_n is more than half the acf length&quot;</span>
+                <span class="p">)</span>   
             <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">acf</span><span class="o">.</span><span class="n">fft_span</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">srate</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-8</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                     <span class="s2">&quot;Sampling rate is not correct: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">acf</span><span class="o">.</span><span class="n">fft_span</span><span class="p">)</span>
