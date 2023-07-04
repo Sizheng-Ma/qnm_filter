@@ -20,8 +20,8 @@ class Network(object):
         input = dict(model_list = [(2, 2, 0)], #l, m, n
                     # trucation time (geocenter, in second)
                     t_init = 1126259462.4083147+2.0*1e-3,
-                    # length of the analysis window (in second)
-                    window_width = 0.2,
+                    # length of the analysis segment (in second)
+                    segment_length = 0.2,
                     # sampling rate after conditioning (in Hz)
                     srate = 2048,
                     # sky localization
@@ -47,21 +47,21 @@ class Network(object):
     acfs : dict
         dictionary containing autocovariance functions for each detector.
     start_times : dict
-        dictionary containing trucation time (start time of analysis window)
+        dictionary containing trucation time (start time of analysis segment)
         for each detector, determined by specified sky location.
     inverse_cholesky_L : dict
         dictionary containing the inverse of Cholesky-decomposition.
     i0_dict : dict
-        dictionary containing the array index of the first time of the analysis window.
+        dictionary containing the array index of the first time of the analysis segment.
         The computation of :attr:`i0_dict` needs to be after the conditioning part.
     ra : float
         source right ascension, in radian.
     dec : float
         source declination, in radian.
     t_init : float
-        trucation time (start time of analysis window) at geocenter.
-    window_width : float
-        width of analysis window
+        trucation time (start time of analysis segment) at geocenter.
+    segment_length : float
+        width of analysis segment
     """
 
     def __init__(self, **kws) -> None:
@@ -77,7 +77,7 @@ class Network(object):
         self.dec = kws.get("dec", None)
         self.t_init = kws.get("t_init", None)
         self.srate = kws.get("srate", None)
-        self.window_width = kws.get("window_width", None)
+        self.segment_length = kws.get("segment_length", None)
 
     def import_ligo_data(self, filename) -> None:
         """Read data from disk and store data in :attr:`Network.original_data`.
@@ -117,7 +117,7 @@ class Network(object):
         getattr(self, attr_name)[ifo] = Data(data, index=time, ifo=ifo)
 
     def detector_alignment(self) -> None:
-        """Set the start times of analysis window at different
+        """Set the start times of analysis segment at different
         interferometers :attr:`Network.start_times` using sky location.
         """
         if self.t_init == None:
@@ -143,23 +143,23 @@ class Network(object):
             self.i0_dict[ifo] = abs(data.time - t0).argmin()
 
     def shift_first_index(self, n):
-        """Shift the first index of the analysis window by `n`."""
+        """Shift the first index of the analysis segment by `n`."""
         for ifo, _ in self.original_data.items():
             self.i0_dict[ifo] += n
 
     @property
     def sampling_n(self) -> int:
-        """Number of data points in analysis window.
+        """Number of data points in analysis segment.
 
         Returns
         -------
         int
             Length of truncated data array
         """
-        return int(round(self.window_width * self.srate))
+        return int(round(self.segment_length * self.srate))
 
     def truncate_data(self, network_data) -> dict:
-        """Select segments of the given data that are in analysis window.
+        """Select segments of the given data that are in analysis segment.
 
         Parameters
         ----------

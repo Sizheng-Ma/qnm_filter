@@ -86,8 +86,8 @@
 <span class="sd">        input = dict(model_list = [(2, 2, 0)], #l, m, n</span>
 <span class="sd">                    # trucation time (geocenter, in second)</span>
 <span class="sd">                    t_init = 1126259462.4083147+2.0*1e-3,</span>
-<span class="sd">                    # length of the analysis window (in second)</span>
-<span class="sd">                    window_width = 0.2,</span>
+<span class="sd">                    # length of the analysis segment (in second)</span>
+<span class="sd">                    segment_length = 0.2,</span>
 <span class="sd">                    # sampling rate after conditioning (in Hz)</span>
 <span class="sd">                    srate = 2048,</span>
 <span class="sd">                    # sky localization</span>
@@ -113,21 +113,21 @@
 <span class="sd">    acfs : dict</span>
 <span class="sd">        dictionary containing autocovariance functions for each detector.</span>
 <span class="sd">    start_times : dict</span>
-<span class="sd">        dictionary containing trucation time (start time of analysis window)</span>
+<span class="sd">        dictionary containing trucation time (start time of analysis segment)</span>
 <span class="sd">        for each detector, determined by specified sky location.</span>
 <span class="sd">    inverse_cholesky_L : dict</span>
 <span class="sd">        dictionary containing the inverse of Cholesky-decomposition.</span>
 <span class="sd">    i0_dict : dict</span>
-<span class="sd">        dictionary containing the array index of the first time of the analysis window.</span>
+<span class="sd">        dictionary containing the array index of the first time of the analysis segment.</span>
 <span class="sd">        The computation of :attr:`i0_dict` needs to be after the conditioning part.</span>
 <span class="sd">    ra : float</span>
 <span class="sd">        source right ascension, in radian.</span>
 <span class="sd">    dec : float</span>
 <span class="sd">        source declination, in radian.</span>
 <span class="sd">    t_init : float</span>
-<span class="sd">        trucation time (start time of analysis window) at geocenter.</span>
-<span class="sd">    window_width : float</span>
-<span class="sd">        width of analysis window</span>
+<span class="sd">        trucation time (start time of analysis segment) at geocenter.</span>
+<span class="sd">    segment_length : float</span>
+<span class="sd">        width of analysis segment</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kws</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -143,7 +143,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">dec</span> <span class="o">=</span> <span class="n">kws</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dec&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">t_init</span> <span class="o">=</span> <span class="n">kws</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;t_init&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">srate</span> <span class="o">=</span> <span class="n">kws</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;srate&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">window_width</span> <span class="o">=</span> <span class="n">kws</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;window_width&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">segment_length</span> <span class="o">=</span> <span class="n">kws</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;segment_length&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Network.import_ligo_data"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.import_ligo_data">[docs]</a>    <span class="k">def</span> <span class="nf">import_ligo_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Read data from disk and store data in :attr:`Network.original_data`.</span>
@@ -183,7 +183,7 @@
         <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)[</span><span class="n">ifo</span><span class="p">]</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Network.detector_alignment"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.detector_alignment">[docs]</a>    <span class="k">def</span> <span class="nf">detector_alignment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the start times of analysis window at different</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the start times of analysis segment at different</span>
 <span class="sd">        interferometers :attr:`Network.start_times` using sky location.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_init</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
@@ -209,23 +209,23 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">i0_dict</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="Network.shift_first_index"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.shift_first_index">[docs]</a>    <span class="k">def</span> <span class="nf">shift_first_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Shift the first index of the analysis window by `n`.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Shift the first index of the analysis segment by `n`.&quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">ifo</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">original_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">i0_dict</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span> <span class="o">+=</span> <span class="n">n</span></div>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">sampling_n</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Number of data points in analysis window.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Number of data points in analysis segment.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        int</span>
 <span class="sd">            Length of truncated data array</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window_width</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">srate</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">segment_length</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">srate</span><span class="p">))</span>
 
 <div class="viewcode-block" id="Network.truncate_data"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.truncate_data">[docs]</a>    <span class="k">def</span> <span class="nf">truncate_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">network_data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select segments of the given data that are in analysis window.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select segments of the given data that are in analysis segment.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
