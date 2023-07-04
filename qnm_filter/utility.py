@@ -143,35 +143,6 @@ def find_probability_difference(threshold, array2d, target_probability=0.9):
     return prob - np.log(target_probability)
 
 
-def sampling_probability(array2d, num_cpu=-1, target_probability=0.9):
-    """Sort 2D likelihood array from minimum to maximum, and compute the difference between the corresponding log probability and log target_probability. The probability enclosed by the minimum likelihood contour is normalized to be 1.
-
-    Parameters
-    ----------
-    array2d : ndarray
-        2D array of sampling log likelihood as a function of mass and spin
-    num_cpu : int, optional
-        number of CPUs used for parallelization, by default -1
-    target_probability : float, optional
-        desired probability, by default 0.9
-
-    Returns
-    -------
-    sorted_array : ndarray
-        sorted 1D likelihood array
-    sorted_probability : ndarray
-        difference between log probability and log target_probability.
-    """
-    sorted_array = np.sort(array2d.flatten())
-
-    sorted_probability = Parallel(num_cpu)(
-        delayed(find_probability_difference)(i, array2d, target_probability)
-        for i in sorted_array
-    )
-    sorted_probability = np.array(sorted_probability)
-    return sorted_array, sorted_probability
-
-
 def find_credible_region(array2d, num_cpu=-1, target_probability=0.9):
     """Compute the log likelihood contour that encloses the desired probability.
 
@@ -195,24 +166,17 @@ def find_credible_region(array2d, num_cpu=-1, target_probability=0.9):
         when the target log likelihood cannot be found.
     """
     # iterate over the inputted log likelihoods and compute the distance of their log probability from the desired value.
-    sorted_likelihood, sorted_probability = sampling_probability(
-        array2d, num_cpu, target_probability
+    sorted_likelihood = np.sort(array2d.flatten())
+
+    sorted_probability = Parallel(num_cpu)(
+        delayed(find_probability_difference)(i, array2d, target_probability)
+        for i in sorted_likelihood
     )
-    # the minimum distance corresponds to the initial guess
-    initial_guess = sorted_likelihood[abs(sorted_probability).argmin()]
+    sorted_probability = np.array(sorted_probability)
 
     # interpolation is preferred when the sample density is insufficient
-    interp_probability = interp1d(sorted_likelihood, sorted_probability)
-    result = fsolve(interp_probability, initial_guess)
-    root_distance = interp_probability(result)
-    if abs(root_distance) > 1e-8:
-        warnings.warn(
-            "Cannot find the root, root distance was {} and so the \
-        credible region estimate will be poor".format(
-                root_distance
-            )
-        )
-    return result
+    interp_probability = interp1d(sorted_probability, sorted_likelihood)
+    return interp_probability(0)
 
 
 def project_to_1d(array2d, delta_mass, delta_chi):
