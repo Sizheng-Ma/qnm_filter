@@ -80,6 +80,7 @@
  | <a href="#N"><strong>N</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#Q"><strong>Q</strong></a>
+ | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
  | <a href="#W"><strong>W</strong></a>
@@ -112,15 +113,17 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="qnm_filter.html#qnm_filter.Network.Network.cholesky_decomposition">cholesky_decomposition() (qnm_filter.Network.Network method)</a>
 </li>
-      <li><a href="qnm_filter.html#qnm_filter.Network.Network.compute_acfs">compute_acfs() (qnm_filter.Network.Network method)</a>
+      <li><a href="qnm_filter.html#qnm_filter.gw_data.ComplexData">ComplexData (class in qnm_filter.gw_data)</a>
 </li>
-      <li><a href="qnm_filter.html#qnm_filter.Network.Network.compute_likelihood">compute_likelihood() (qnm_filter.Network.Network method)</a>
+      <li><a href="qnm_filter.html#qnm_filter.Network.Network.compute_acfs">compute_acfs() (qnm_filter.Network.Network method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="qnm_filter.html#qnm_filter.Network.Network.compute_likelihood">compute_likelihood() (qnm_filter.Network.Network method)</a>
+</li>
       <li><a href="qnm_filter.html#qnm_filter.Network.Network.compute_SNR">compute_SNR() (qnm_filter.Network.Network method)</a>
 </li>
-      <li><a href="qnm_filter.html#qnm_filter.gw_data.Data.condition">condition() (qnm_filter.gw_data.Data method)</a>
+      <li><a href="qnm_filter.html#qnm_filter.gw_data.RealData.condition">condition() (qnm_filter.gw_data.RealData method)</a>
 </li>
       <li><a href="qnm_filter.html#qnm_filter.Network.Network.condition_data">condition_data() (qnm_filter.Network.Network method)</a>
 </li>
@@ -129,10 +132,6 @@
 
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="qnm_filter.html#qnm_filter.gw_data.Data">Data (class in qnm_filter.gw_data)</a>
-</li>
-  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="qnm_filter.html#qnm_filter.Network.Network.detector_alignment">detector_alignment() (qnm_filter.Network.Network method)</a>
 </li>
@@ -150,12 +149,18 @@
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="qnm_filter.html#qnm_filter.gw_data.Data.fft_data">fft_data (qnm_filter.gw_data.Data property)</a>
+      <li><a href="qnm_filter.html#qnm_filter.gw_data.ComplexData.fft_data">fft_data (qnm_filter.gw_data.ComplexData property)</a>
+
+      <ul>
+        <li><a href="qnm_filter.html#qnm_filter.gw_data.RealData.fft_data">(qnm_filter.gw_data.RealData property)</a>
 </li>
-      <li><a href="qnm_filter.html#qnm_filter.gw_data.Data.fft_freq">fft_freq (qnm_filter.gw_data.Data property)</a>
+      </ul></li>
+      <li><a href="qnm_filter.html#qnm_filter.gw_data.ComplexData.fft_freq">fft_freq (qnm_filter.gw_data.ComplexData property)</a>
+
+      <ul>
+        <li><a href="qnm_filter.html#qnm_filter.gw_data.RealData.fft_freq">(qnm_filter.gw_data.RealData property)</a>
 </li>
-      <li><a href="qnm_filter.html#qnm_filter.gw_data.Data.fft_span">fft_span (qnm_filter.gw_data.Data property)</a>
-</li>
+      </ul></li>
       <li><a href="qnm_filter.html#qnm_filter.gw_data.Filter">Filter (class in qnm_filter.gw_data)</a>
 </li>
   </ul></td>
@@ -275,6 +280,8 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="qnm_filter.html#qnm_filter.gw_data.ComplexData.pad_complex_data_for_fft">pad_complex_data_for_fft() (qnm_filter.gw_data.ComplexData method)</a>
+</li>
       <li><a href="qnm_filter.html#qnm_filter.sxs_helper.SXSWaveforms.pad_data">pad_data() (qnm_filter.sxs_helper.SXSWaveforms method)</a>
 </li>
       <li><a href="qnm_filter.html#qnm_filter.utility.pad_data_for_fft">pad_data_for_fft() (in module qnm_filter.utility)</a>
@@ -340,6 +347,14 @@
   </ul></td>
 </tr></table>
 
+<h2 id="R">R</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="qnm_filter.html#qnm_filter.gw_data.RealData">RealData (class in qnm_filter.gw_data)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -351,11 +366,15 @@
 </li>
       <li><a href="qnm_filter.html#qnm_filter.bilby_helper.set_bilby_ifo">set_bilby_ifo() (in module qnm_filter.bilby_helper)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="qnm_filter.html#qnm_filter.bilby_helper.set_bilby_predefined_ifo">set_bilby_predefined_ifo() (in module qnm_filter.bilby_helper)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="qnm_filter.html#qnm_filter.Network.Network.shift_first_index">shift_first_index() (qnm_filter.Network.Network method)</a>
+</li>
+      <li><a href="qnm_filter.html#qnm_filter.gw_data.ComplexData.shifted_fft_data">shifted_fft_data (qnm_filter.gw_data.ComplexData property)</a>
+</li>
+      <li><a href="qnm_filter.html#qnm_filter.gw_data.ComplexData.shifted_fft_freq">shifted_fft_freq (qnm_filter.gw_data.ComplexData property)</a>
 </li>
       <li><a href="qnm_filter.html#qnm_filter.gw_data.Filter.single_filter">single_filter() (qnm_filter.gw_data.Filter method)</a>
 </li>
@@ -367,16 +386,16 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="qnm_filter.html#qnm_filter.gw_data.Data.time">time (qnm_filter.gw_data.Data property)</a>
-</li>
-      <li><a href="qnm_filter.html#qnm_filter.gw_data.Data.time_interval">time_interval (qnm_filter.gw_data.Data property)</a>
+      <li><a href="qnm_filter.html#qnm_filter.gw_data.Filter.total_filter">total_filter() (qnm_filter.gw_data.Filter method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="qnm_filter.html#qnm_filter.gw_data.Filter.total_filter">total_filter() (qnm_filter.gw_data.Filter method)</a>
+      <li><a href="qnm_filter.html#qnm_filter.gw_data.ComplexData.truncate_data">truncate_data() (qnm_filter.gw_data.ComplexData method)</a>
+
+      <ul>
+        <li><a href="qnm_filter.html#qnm_filter.Network.Network.truncate_data">(qnm_filter.Network.Network method)</a>
 </li>
-      <li><a href="qnm_filter.html#qnm_filter.Network.Network.truncate_data">truncate_data() (qnm_filter.Network.Network method)</a>
-</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 

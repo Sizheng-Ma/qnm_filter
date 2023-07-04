@@ -25,7 +25,7 @@ def bilby_get_strain(ifo):
     Data
         strain data
     """
-    return Data(
+    return RealData(
         ifo.strain_data.time_domain_strain,
         index=ifo.strain_data.time_array,
         ifo=ifo.name,
