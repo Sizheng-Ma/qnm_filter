@@ -115,8 +115,8 @@
 <span class="sd">    start_times : dict</span>
 <span class="sd">        dictionary containing trucation time (start time of analysis segment)</span>
 <span class="sd">        for each detector, determined by specified sky location.</span>
-<span class="sd">    inverse_cholesky_L : dict</span>
-<span class="sd">        dictionary containing the inverse of Cholesky-decomposition.</span>
+<span class="sd">    cholesky_L : dict</span>
+<span class="sd">        dictionary containing Cholesky factorizations of detectors.</span>
 <span class="sd">    i0_dict : dict</span>
 <span class="sd">        dictionary containing the array index of the first time of the analysis segment.</span>
 <span class="sd">        The computation of :attr:`i0_dict` needs to be after the conditioning part.</span>
@@ -136,7 +136,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">filtered_data</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">acfs</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">start_times</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">inverse_cholesky_L</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cholesky_L</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">i0_dict</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">ra</span> <span class="o">=</span> <span class="n">kws</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ra&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
@@ -287,22 +287,15 @@
 <span class="sd">        and the inverse of :math:`L`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">ifo</span><span class="p">,</span> <span class="n">acf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">acfs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampling_n</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acfs</span><span class="p">[</span><span class="n">ifo</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;The sampling_n is more than half the acf length&quot;</span>
-                <span class="p">)</span>   
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampling_n</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acfs</span><span class="p">[</span><span class="n">ifo</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The sampling_n is more than half the acf length&quot;</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">acf</span><span class="o">.</span><span class="n">fft_span</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">srate</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-8</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                     <span class="s2">&quot;Sampling rate is not correct: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">acf</span><span class="o">.</span><span class="n">fft_span</span><span class="p">)</span>
                 <span class="p">)</span>
             <span class="n">truncated_acf</span> <span class="o">=</span> <span class="n">acf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampling_n</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
             <span class="n">L</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cholesky</span><span class="p">(</span><span class="n">sl</span><span class="o">.</span><span class="n">toeplitz</span><span class="p">(</span><span class="n">truncated_acf</span><span class="p">))</span>
-            <span class="n">L_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">L</span><span class="p">)</span>
-            <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">L_inv</span><span class="p">,</span> <span class="n">L</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">L</span><span class="p">)))</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
-            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">norm</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-8</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Inverse of L is not correct&quot;</span><span class="p">)</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">inverse_cholesky_L</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span> <span class="o">=</span> <span class="n">L_inv</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cholesky_L</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span> <span class="o">=</span> <span class="n">L</span></div>
 
 <div class="viewcode-block" id="Network.compute_likelihood"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.compute_likelihood">[docs]</a>    <span class="k">def</span> <span class="nf">compute_likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">apply_filter</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute likelihood for interferometer network.</span>
@@ -325,8 +318,8 @@
             <span class="n">truncation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">truncate_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filtered_data</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">ifo</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">truncation</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">wd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inverse_cholesky_L</span><span class="p">[</span><span class="n">ifo</span><span class="p">],</span> <span class="n">data</span><span class="p">)</span>
-            <span class="n">likelihood</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">wd</span><span class="p">,</span> <span class="n">wd</span><span class="p">)</span>
+            <span class="n">wd</span> <span class="o">=</span> <span class="n">sl</span><span class="o">.</span><span class="n">cho_solve</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">cholesky_L</span><span class="p">[</span><span class="n">ifo</span><span class="p">],</span> <span class="kc">True</span><span class="p">),</span> <span class="n">data</span><span class="p">)</span>
+            <span class="n">likelihood</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">wd</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">likelihood</span></div>
 
 <div class="viewcode-block" id="Network.add_filter"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.Network.Network.add_filter">[docs]</a>    <span class="k">def</span> <span class="nf">add_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -373,13 +366,12 @@
 <span class="sd">        optimal: bool</span>
 <span class="sd">            Compute optimal SNR</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">template_w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inverse_cholesky_L</span><span class="p">[</span><span class="n">ifo</span><span class="p">],</span> <span class="n">template</span><span class="p">)</span>
-        <span class="n">data_w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inverse_cholesky_L</span><span class="p">[</span><span class="n">ifo</span><span class="p">],</span> <span class="n">data</span><span class="p">)</span>
-        <span class="n">snr_opt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">template_w</span><span class="p">,</span> <span class="n">template_w</span><span class="p">))</span>
+        <span class="n">template_w</span> <span class="o">=</span> <span class="n">sl</span><span class="o">.</span><span class="n">cho_solve</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">cholesky_L</span><span class="p">[</span><span class="n">ifo</span><span class="p">],</span> <span class="kc">True</span><span class="p">),</span> <span class="n">template</span><span class="p">)</span>
+        <span class="n">snr_opt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">template_w</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">optimal</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">snr_opt</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">snr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">data_w</span><span class="p">,</span> <span class="n">template_w</span><span class="p">)</span> <span class="o">/</span> <span class="n">snr_opt</span>
+            <span class="n">snr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">template_w</span><span class="p">)</span> <span class="o">/</span> <span class="n">snr_opt</span>
             <span class="k">return</span> <span class="n">snr</span></div></div>
 </pre></div>
 
