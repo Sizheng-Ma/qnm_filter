@@ -1,7 +1,8 @@
 """Utilities to manipulate GW data and rational filters.
 """
-__all__ = ["RealData", "Filter", "Noise"]
+__all__ = ["RealData", "ComplexData", "Filter", "Noise"]
 
+from .utility import pad_data_for_fft
 import astropy.constants as c
 import qnm
 import pandas as pd
@@ -193,6 +194,80 @@ class DataBase(pd.Series):
     def fft_span(self) -> float:
         """Span of FFT."""
         return 1.0 / self.time_interval
+
+
+class ComplexData(DataBase):
+    """Container for complex-valued time-domain numerical-relativity waveforms.
+
+    Parameters
+    ----------
+    ifo : str
+        name of interferometer.
+    """
+
+    def pad_complex_data_for_fft(self, partition, len_pow):
+        """Pad zeros on both sides for FFT
+
+        Parameters
+        ----------
+        partition : int
+            fraction of zeros to be padded on the left
+        len_pow : int
+            the final length of padded data is :math:`2^{\textrm{len\_pow}}`
+
+        Returns
+        -------
+        ComplexData
+            padded data
+        """
+        tpad, data_pad = pad_data_for_fft(self, partition, len_pow)
+        return ComplexData(data_pad, index=tpad, ifo=self.ifo)
+
+    @property
+    def fft_freq(self):
+        """FFT angular frequency stamps."""
+        fft_freq = np.fft.fftfreq(len(self), d=self.time_interval) * 2 * np.pi
+        return fft_freq
+
+    @property
+    def shifted_fft_freq(self):
+        """Shifted FFT angular frequency stamps, with the zero-frequency component being at the center."""
+        fft_freq = np.fft.fftfreq(len(self), d=self.time_interval) * 2 * np.pi
+        return np.fft.fftshift(fft_freq)
+
+    @property
+    def fft_data(self):
+        """FFT of the NR waveform"""
+        fft_data = np.fft.ifft(self.values, norm="ortho")
+        return fft_data
+
+    @property
+    def shifted_fft_data(self):
+        """Shifted FFT of the NR waveform, with the zero-frequency component being at the center."""
+        fft_data = np.fft.ifft(self.values, norm="ortho")
+        return np.fft.fftshift(fft_data)
+
+    def truncate_data(self, before=None, after=None, copy=None):
+        """Truncate data before and after some index value
+
+        Parameters
+        ----------
+        before : double, optional
+            truncate all data before this index value, by default None
+        after : double, optional
+            truncate all data after this index value, by default None
+        copy : copy, optional
+            return a copy of the truncated data, by default None
+
+        Returns
+        -------
+        ComplexData
+            truncated data
+        """
+        truncated_waveform = self.truncate(before, after, copy)
+        return ComplexData(
+            truncated_waveform.values, index=truncated_waveform.index, ifo=self.ifo
+        )
 
 
 class RealData(DataBase):

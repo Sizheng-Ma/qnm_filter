@@ -3,7 +3,6 @@
 __all__ = ["SXSWaveforms"]
 
 from .gw_data import *
-from .utility import *
 import sxs
 import lal
 import numpy as np
@@ -108,7 +107,7 @@ class SXSWaveforms:
 
             ts = np.arange(t_interp_i, t_interp_f, delta_t)
             interplated_waveform = waveform_lm.interpolate(ts).data
-            self.original_data[str(l) + str(m)] = RealData(
+            self.original_data[str(l) + str(m)] = ComplexData(
                 interplated_waveform, index=ts - tp
             )
         else:
@@ -117,7 +116,7 @@ class SXSWaveforms:
             index_i = waveform_lm.index_closest_to(t_interp_i)
             index_f = waveform_lm.index_closest_to(t_interp_f)
             waveform_lm_trunc = waveform_lm[index_i:index_f]
-            self.original_data[str(l) + str(m)] = RealData(
+            self.original_data[str(l) + str(m)] = ComplexData(
                 waveform_lm_trunc.data, index=waveform_lm_trunc.t - tp
             )
 
@@ -175,7 +174,7 @@ class SXSWaveforms:
             the final length of padded data is :math:`2^{\textrm{len\_pow}}`
         """
         for lm, data in self.original_data.items():
-            self.padded_data[lm] = pad_data_for_fft(data, partition, len_pow)
+            self.padded_data[lm] = data.pad_complex_data_for_fft(partition, len_pow)
 
     def scale_to_si(self, attr_name, mass, distance) -> None:
         """Convert GW waveforms stored in `attr_name` from numerical-relativity's units to SI units.
@@ -192,7 +191,7 @@ class SXSWaveforms:
         for lm, data in getattr(self, attr_name).items():
             scaled_time = data.time * Filter.mass_unit(mass)
             scaled_waveform = data.values * Filter.mass_unit(mass) / distance / MPC
-            self.data_in_si[lm] = RealData(
+            self.data_in_si[lm] = ComplexData(
                 scaled_waveform, index=scaled_time, ifo=data.ifo
             )
 
