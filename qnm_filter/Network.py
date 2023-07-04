@@ -98,7 +98,7 @@ class Network(object):
 
             time = np.linspace(t_start, t_start + duration, num=len(h), endpoint=False)
 
-            self.original_data[ifo] = Data(h, index=time, ifo=ifo)
+            self.original_data[ifo] = RealData(h, index=time, ifo=ifo)
 
     def import_data_array(self, attr_name, data, time, ifo) -> None:
         """Add the inputted data to a dynamic/existing attribute.
@@ -114,7 +114,7 @@ class Network(object):
         ifo : string
             Name of interferometer
         """
-        getattr(self, attr_name)[ifo] = Data(data, index=time, ifo=ifo)
+        getattr(self, attr_name)[ifo] = RealData(data, index=time, ifo=ifo)
 
     def detector_alignment(self) -> None:
         """Set the start times of analysis segment at different
@@ -176,7 +176,7 @@ class Network(object):
         for i, d in network_data.items():
             if abs(d.fft_span / self.srate - 1) > 1e-8:
                 raise ValueError("Sampling rate is not correct: {}".format(d.fft_span))
-            data[i] = Data(d.iloc[i0s[i] : i0s[i] + self.sampling_n])
+            data[i] = RealData(d.iloc[i0s[i] : i0s[i] + self.sampling_n])
         return data
 
     def condition_data(self, attr_name, **kwargs) -> None:
@@ -266,7 +266,7 @@ class Network(object):
             ifft = np.fft.irfft(
                 filter_in_freq * data_in_freq, norm="ortho", n=len(data)
             )
-            self.filtered_data[ifo] = Data(ifft, index=data.index, ifo=ifo)
+            self.filtered_data[ifo] = RealData(ifft, index=data.index, ifo=ifo)
 
     def likelihood_vs_mass_spin(self, M_est, chi_est, **kwargs) -> float:
         """Compute likelihood for the given mass and spin.

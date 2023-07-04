@@ -10,7 +10,6 @@ __all__ = [
     "load_class",
 ]
 
-from .gw_data import *
 from joblib import Parallel, delayed
 import matplotlib.pyplot as pl
 import numpy as np
@@ -241,7 +240,7 @@ def pad_data_for_fft(data, partition, len_pow) -> None:
         "linear_ramp",
         end_values=(end2, end1),
     )
-    return Data(data_pad, index=tpad)
+    return tpad, data_pad
 
 
 def save_class(cls, filename):
