@@ -76,7 +76,6 @@
     <span class="s2">&quot;load_class&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
-<span class="kn">from</span> <span class="nn">.gw_data</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">pl</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -307,7 +306,7 @@
         <span class="s2">&quot;linear_ramp&quot;</span><span class="p">,</span>
         <span class="n">end_values</span><span class="o">=</span><span class="p">(</span><span class="n">end2</span><span class="p">,</span> <span class="n">end1</span><span class="p">),</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="n">Data</span><span class="p">(</span><span class="n">data_pad</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">tpad</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">tpad</span><span class="p">,</span> <span class="n">data_pad</span></div>
 
 
 <div class="viewcode-block" id="save_class"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.utility.save_class">[docs]</a><span class="k">def</span> <span class="nf">save_class</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>

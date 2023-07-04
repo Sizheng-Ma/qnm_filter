@@ -66,8 +66,9 @@
   <h1>Source code for qnm_filter.gw_data</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Utilities to manipulate GW data and rational filters.</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Data&quot;</span><span class="p">,</span> <span class="s2">&quot;Filter&quot;</span><span class="p">,</span> <span class="s2">&quot;Noise&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;RealData&quot;</span><span class="p">,</span> <span class="s2">&quot;ComplexData&quot;</span><span class="p">,</span> <span class="s2">&quot;Filter&quot;</span><span class="p">,</span> <span class="s2">&quot;Noise&quot;</span><span class="p">]</span>
 
+<span class="kn">from</span> <span class="nn">.utility</span> <span class="kn">import</span> <span class="n">pad_data_for_fft</span>
 <span class="kn">import</span> <span class="nn">astropy.constants</span> <span class="k">as</span> <span class="nn">c</span>
 <span class="kn">import</span> <span class="nn">qnm</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -218,17 +219,17 @@
         <span class="k">return</span> <span class="n">final_rational_filter</span></div></div>
 
 
-<div class="viewcode-block" id="Data"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Data">[docs]</a><span class="k">class</span> <span class="nc">Data</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Container for gravitational data.</span>
+<span class="k">class</span> <span class="nc">DataBase</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A Base container for time-domain gravitational data</span>
 
-<span class="sd">    Attributes</span>
+<span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    ifo : str</span>
 <span class="sd">        name of interferometer.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">Data</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DataBase</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ifo</span> <span class="o">=</span> <span class="n">ifo</span>
 
     <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memo</span><span class="p">):</span>
@@ -260,6 +261,90 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Span of FFT.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_interval</span>
 
+
+<div class="viewcode-block" id="ComplexData"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.ComplexData">[docs]</a><span class="k">class</span> <span class="nc">ComplexData</span><span class="p">(</span><span class="n">DataBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Container for complex-valued time-domain numerical-relativity waveforms.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ifo : str</span>
+<span class="sd">        name of interferometer.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ComplexData.pad_complex_data_for_fft"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.ComplexData.pad_complex_data_for_fft">[docs]</a>    <span class="k">def</span> <span class="nf">pad_complex_data_for_fft</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">partition</span><span class="p">,</span> <span class="n">len_pow</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pad zeros on both sides for FFT</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        partition : int</span>
+<span class="sd">            fraction of zeros to be padded on the left</span>
+<span class="sd">        len_pow : int</span>
+<span class="sd">            the final length of padded data is :math:`2^{\textrm{len\_pow}}`</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ComplexData</span>
+<span class="sd">            padded data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data_pad</span><span class="p">,</span> <span class="n">tpad</span> <span class="o">=</span> <span class="n">pad_data_for_fft</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">partition</span><span class="p">,</span> <span class="n">len_pow</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ComplexData</span><span class="p">(</span><span class="n">data_pad</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">tpad</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">fft_freq</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;FFT angular frequency stamps.&quot;&quot;&quot;</span>
+        <span class="n">fft_freq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftfreq</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">d</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_interval</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+        <span class="k">return</span> <span class="n">fft_freq</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">shifted_fft_freq</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Shifted FFT angular frequency stamps, with the zero-frequency component being at the center.&quot;&quot;&quot;</span>
+        <span class="n">fft_freq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftfreq</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">d</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_interval</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftshift</span><span class="p">(</span><span class="n">fft_freq</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">fft_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;FFT of the NR waveform&quot;&quot;&quot;</span>
+        <span class="n">fft_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="s2">&quot;ortho&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fft_data</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">shifted_fft_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Shifted FFT of the NR waveform, with the zero-frequency component being at the center.&quot;&quot;&quot;</span>
+        <span class="n">fft_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="s2">&quot;ortho&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftshift</span><span class="p">(</span><span class="n">fft_data</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ComplexData.truncate_data"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.ComplexData.truncate_data">[docs]</a>    <span class="k">def</span> <span class="nf">truncate_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">before</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">after</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Truncate data before and after some index value</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        before : double, optional</span>
+<span class="sd">            truncate all data before this index value, by default None</span>
+<span class="sd">        after : double, optional</span>
+<span class="sd">            truncate all data after this index value, by default None</span>
+<span class="sd">        copy : copy, optional</span>
+<span class="sd">            return a copy of the truncated data, by default None</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ComplexData</span>
+<span class="sd">            truncated data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">truncated_waveform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">truncate</span><span class="p">(</span><span class="n">before</span><span class="p">,</span> <span class="n">after</span><span class="p">,</span> <span class="n">copy</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ComplexData</span><span class="p">(</span>
+            <span class="n">truncated_waveform</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">truncated_waveform</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="RealData"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.RealData">[docs]</a><span class="k">class</span> <span class="nc">RealData</span><span class="p">(</span><span class="n">DataBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Container for real-valued time-domain gravitational data.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ifo : str</span>
+<span class="sd">        name of interferometer.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">fft_freq</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;FFT angular frequency stamps.&quot;&quot;&quot;</span>
@@ -270,7 +355,7 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;FFT of gravitational-wave data.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">rfft</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="s2">&quot;ortho&quot;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Data.condition"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Data.condition">[docs]</a>    <span class="k">def</span> <span class="nf">condition</span><span class="p">(</span>
+<div class="viewcode-block" id="RealData.condition"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.RealData.condition">[docs]</a>    <span class="k">def</span> <span class="nf">condition</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">t0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">srate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -348,7 +433,7 @@
         <span class="k">if</span> <span class="n">remove_mean</span><span class="p">:</span>
             <span class="n">cond_data</span> <span class="o">-=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">cond_data</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">Data</span><span class="p">(</span><span class="n">cond_data</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">cond_time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">RealData</span><span class="p">(</span><span class="n">cond_data</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">cond_time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="Noise"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Noise">[docs]</a><span class="k">class</span> <span class="nc">Noise</span><span class="p">:</span>
@@ -372,16 +457,16 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">ifo</span> <span class="o">=</span> <span class="n">ifo</span>
         <span class="k">if</span> <span class="s2">&quot;psd&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
             <span class="n">freq</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;freq&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">psd</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;psd&quot;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">psd</span> <span class="o">=</span> <span class="n">RealData</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;psd&quot;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span>
         <span class="k">if</span> <span class="s2">&quot;asd&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
             <span class="n">freq</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;freq&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">asd</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;asd&quot;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">asd</span> <span class="o">=</span> <span class="n">RealData</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;asd&quot;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span>
         <span class="k">if</span> <span class="s2">&quot;acf&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
             <span class="n">time</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;time&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">acf</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;acf&quot;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">acf</span> <span class="o">=</span> <span class="n">RealData</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;acf&quot;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span>
         <span class="k">if</span> <span class="s2">&quot;signal&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
             <span class="n">time</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;time&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">signal</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;signal&quot;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">signal</span> <span class="o">=</span> <span class="n">RealData</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;signal&quot;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Noise.load_noise_curve"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Noise.load_noise_curve">[docs]</a>    <span class="k">def</span> <span class="nf">load_noise_curve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Read a txt/dat file and store the data in target attribute</span>
@@ -398,7 +483,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">filereader</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
         <span class="nb">setattr</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">Data</span><span class="p">(</span><span class="n">filereader</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">filereader</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">RealData</span><span class="p">(</span><span class="n">filereader</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">filereader</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">)</span>
         <span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">__psd_to_acf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">psd</span><span class="p">):</span>
@@ -416,16 +501,16 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">fs</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">psd</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">psd</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
         <span class="n">rho</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">irfft</span><span class="p">(</span><span class="n">psd</span><span class="p">)</span> <span class="o">*</span> <span class="n">fs</span>
-        <span class="k">return</span> <span class="n">Data</span><span class="p">(</span><span class="n">rho</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">rho</span><span class="p">))</span> <span class="o">/</span> <span class="n">fs</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">RealData</span><span class="p">(</span><span class="n">rho</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">rho</span><span class="p">))</span> <span class="o">/</span> <span class="n">fs</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Noise.from_psd"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Noise.from_psd">[docs]</a>    <span class="k">def</span> <span class="nf">from_psd</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute ASD and ACF from PSD&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">asd</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psd</span><span class="o">.</span><span class="n">values</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">psd</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">asd</span> <span class="o">=</span> <span class="n">RealData</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psd</span><span class="o">.</span><span class="n">values</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">psd</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">acf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__psd_to_acf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psd</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Noise.from_asd"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Noise.from_asd">[docs]</a>    <span class="k">def</span> <span class="nf">from_asd</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute PSD and ACF from ASD&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">psd</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">asd</span><span class="o">.</span><span class="n">values</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">asd</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">psd</span> <span class="o">=</span> <span class="n">RealData</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">asd</span><span class="o">.</span><span class="n">values</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">asd</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">acf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__psd_to_acf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psd</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Noise.from_acf"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Noise.from_acf">[docs]</a>    <span class="k">def</span> <span class="nf">from_acf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -435,7 +520,7 @@
         <span class="n">psd_temp</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">rfft</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acf</span><span class="p">)</span>
         <span class="c1"># TODO: This could go wrong. PSD is supposed to be real. Better way?</span>
         <span class="n">psd_temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">psd_temp</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">psd</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">psd_temp</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">freq_samp</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">psd</span> <span class="o">=</span> <span class="n">RealData</span><span class="p">(</span><span class="n">psd_temp</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">freq_samp</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">asd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psd</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Noise.welch"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.gw_data.Noise.welch">[docs]</a>    <span class="k">def</span> <span class="nf">welch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kws</span><span class="p">):</span>
@@ -444,7 +529,7 @@
         <span class="n">nperseg</span> <span class="o">=</span> <span class="n">fs</span> <span class="o">/</span> <span class="n">kws</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sampling_rate&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
         <span class="n">freq</span><span class="p">,</span> <span class="n">psd</span> <span class="o">=</span> <span class="n">ss</span><span class="o">.</span><span class="n">welch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signal</span><span class="p">,</span> <span class="n">fs</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span> <span class="n">nperseg</span><span class="o">=</span><span class="n">nperseg</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">psd</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">psd</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">psd</span> <span class="o">=</span> <span class="n">RealData</span><span class="p">(</span><span class="n">psd</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ifo</span><span class="p">)</span></div>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">bilby_psd</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
