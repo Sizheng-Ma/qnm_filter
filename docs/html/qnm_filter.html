@@ -173,8 +173,8 @@
 <span class="nb">input</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">model_list</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)],</span> <span class="c1">#l, m, n</span>
             <span class="c1"># trucation time (geocenter, in second)</span>
             <span class="n">t_init</span> <span class="o">=</span> <span class="mf">1126259462.4083147</span><span class="o">+</span><span class="mf">2.0</span><span class="o">*</span><span class="mf">1e-3</span><span class="p">,</span>
-            <span class="c1"># length of the analysis window (in second)</span>
-            <span class="n">window_width</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
+            <span class="c1"># length of the analysis segment (in second)</span>
+            <span class="n">segment_length</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
             <span class="c1"># sampling rate after conditioning (in Hz)</span>
             <span class="n">srate</span> <span class="o">=</span> <span class="mi">2048</span><span class="p">,</span>
             <span class="c1"># sky localization</span>
@@ -201,21 +201,21 @@
 </dd>
 <dt><strong>acfs</strong><span class="classifier">dict</span></dt><dd><p>dictionary containing autocovariance functions for each detector.</p>
 </dd>
-<dt><strong>start_times</strong><span class="classifier">dict</span></dt><dd><p>dictionary containing trucation time (start time of analysis window)
+<dt><strong>start_times</strong><span class="classifier">dict</span></dt><dd><p>dictionary containing trucation time (start time of analysis segment)
 for each detector, determined by specified sky location.</p>
 </dd>
 <dt><strong>inverse_cholesky_L</strong><span class="classifier">dict</span></dt><dd><p>dictionary containing the inverse of Cholesky-decomposition.</p>
 </dd>
-<dt><strong>i0_dict</strong><span class="classifier">dict</span></dt><dd><p>dictionary containing the array index of the first time of the analysis window.
+<dt><strong>i0_dict</strong><span class="classifier">dict</span></dt><dd><p>dictionary containing the array index of the first time of the analysis segment.
 The computation of <code class="xref py py-attr docutils literal notranslate"><span class="pre">i0_dict</span></code> needs to be after the conditioning part.</p>
 </dd>
 <dt><strong>ra</strong><span class="classifier">float</span></dt><dd><p>source right ascension, in radian.</p>
 </dd>
 <dt><strong>dec</strong><span class="classifier">float</span></dt><dd><p>source declination, in radian.</p>
 </dd>
-<dt><strong>t_init</strong><span class="classifier">float</span></dt><dd><p>trucation time (start time of analysis window) at geocenter.</p>
+<dt><strong>t_init</strong><span class="classifier">float</span></dt><dd><p>trucation time (start time of analysis segment) at geocenter.</p>
 </dd>
-<dt><strong>window_width</strong><span class="classifier">float</span></dt><dd><p>width of analysis window</p>
+<dt><strong>segment_length</strong><span class="classifier">float</span></dt><dd><p>width of analysis segment</p>
 </dd>
 </dl>
 </dd>
@@ -242,7 +242,7 @@ The computation of <code class="xref py py-attr docutils literal notranslate"><s
 <td><p>Condition data for all interferometers.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.detector_alignment" title="qnm_filter.Network.Network.detector_alignment"><code class="xref py py-obj docutils literal notranslate"><span class="pre">detector_alignment</span></code></a>()</p></td>
-<td><p>Set the start times of analysis window at different interferometers <code class="xref py py-attr docutils literal notranslate"><span class="pre">Network.start_times</span></code> using sky location.</p></td>
+<td><p>Set the start times of analysis segment at different interferometers <code class="xref py py-attr docutils literal notranslate"><span class="pre">Network.start_times</span></code> using sky location.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.first_index" title="qnm_filter.Network.Network.first_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">first_index</span></code></a>()</p></td>
 <td><p>Find the index of a data point that is closet to the choosen start time <code class="xref py py-attr docutils literal notranslate"><span class="pre">Network.start_times</span></code> for each interferometer.</p></td>
@@ -257,10 +257,10 @@ The computation of <code class="xref py py-attr docutils literal notranslate"><s
 <td><p>Compute likelihood for the given mass and spin.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.shift_first_index" title="qnm_filter.Network.Network.shift_first_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shift_first_index</span></code></a>(n)</p></td>
-<td><p>Shift the first index of the analysis window by <cite>n</cite>.</p></td>
+<td><p>Shift the first index of the analysis segment by <cite>n</cite>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.Network.Network.truncate_data" title="qnm_filter.Network.Network.truncate_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">truncate_data</span></code></a>(network_data)</p></td>
-<td><p>Select segments of the given data that are in analysis window.</p></td>
+<td><p>Select segments of the given data that are in analysis segment.</p></td>
 </tr>
 </tbody>
 </table>
@@ -343,7 +343,7 @@ and the inverse of <img class="math" src="_images/math/19eef1966f7c545af3ac8c0fa
 <dl class="py method">
 <dt class="sig sig-object py" id="qnm_filter.Network.Network.detector_alignment">
 <span class="sig-name descname"><span class="pre">detector_alignment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/qnm_filter/Network.html#Network.detector_alignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.Network.Network.detector_alignment" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set the start times of analysis window at different
+<dd><p>Set the start times of analysis segment at different
 interferometers <code class="xref py py-attr docutils literal notranslate"><span class="pre">Network.start_times</span></code> using sky location.</p>
 </dd></dl>
 
@@ -413,7 +413,7 @@ start time <code class="xref py py-attr docutils literal notranslate"><span clas
 <dl class="py property">
 <dt class="sig sig-object py" id="qnm_filter.Network.Network.sampling_n">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sampling_n</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#qnm_filter.Network.Network.sampling_n" title="Permalink to this definition">¶</a></dt>
-<dd><p>Number of data points in analysis window.</p>
+<dd><p>Number of data points in analysis segment.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
@@ -427,13 +427,13 @@ start time <code class="xref py py-attr docutils literal notranslate"><span clas
 <dl class="py method">
 <dt class="sig sig-object py" id="qnm_filter.Network.Network.shift_first_index">
 <span class="sig-name descname"><span class="pre">shift_first_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/Network.html#Network.shift_first_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.Network.Network.shift_first_index" title="Permalink to this definition">¶</a></dt>
-<dd><p>Shift the first index of the analysis window by <cite>n</cite>.</p>
+<dd><p>Shift the first index of the analysis segment by <cite>n</cite>.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="qnm_filter.Network.Network.truncate_data">
 <span class="sig-name descname"><span class="pre">truncate_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">network_data</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/qnm_filter/Network.html#Network.truncate_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.Network.Network.truncate_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Select segments of the given data that are in analysis window.</p>
+<dd><p>Select segments of the given data that are in analysis segment.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
