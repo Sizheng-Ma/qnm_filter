@@ -33,8 +33,9 @@ class Filter:
         self.mass = mass  # in solar mass
 
         self.model_list = []
-        for l, m, n in model_list:
-            self.model_list.append(dict(l=l, m=m, n=n))
+        if model_list != None:
+            for l, m, n in model_list:
+                self.model_list.append(dict(l=l, m=m, n=n))
 
     @property
     def get_spin(self) -> float:
