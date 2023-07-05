@@ -17,7 +17,7 @@ class Network(object):
     Example usage::
 
         import qnm_filter
-        input = dict(model_list = [(2, 2, 0)], #l, m, n
+        input = dict(model_list = [(2, 2, 0, 'p')], #l, m, n, prograde/retrograde
                     # trucation time (geocenter, in second)
                     t_init = 1126259462.4083147+2.0*1e-3,
                     # length of the analysis segment (in second)

@@ -34,20 +34,23 @@ class Filter:
 
         self.model_list = []
         if model_list != None:
-            for l, m, n in model_list:
-                self.model_list.append(dict(l=l, m=m, n=n))
+            for l, m, n, p in model_list:
+                self.model_list.append(dict(l=l, m=m, n=n, p=p))
 
     @property
     def get_freq_list(self) -> list:
-        """Return a list of QNM frequencies"""
+        """Return a list of QNM frequencies stored in :attr:`Filter.model_list`."""
         freq_list = {}
         for mode in self.model_list:
             this_l = mode["l"]
             this_m = mode["m"]
             this_n = mode["n"]
-            freq_list[str(this_l) + str(this_m) + str(this_n)] = qnm.modes_cache(
-                s=-2, l=this_l, m=this_m, n=this_n
-            )(a=self.chi)[0]
+            this_p = mode["p"]
+            omega = qnm.modes_cache(s=-2, l=this_l, m=this_m, n=this_n)(a=self.chi)[0]
+            if this_p == "p":
+                freq_list[str(this_l) + str(this_m) + str(this_n)] = omega
+            elif this_p == "r":
+                freq_list[str(this_l) + str(this_m) + str(this_n)] = -np.conj(omega)
         return freq_list
 
     @property
@@ -142,6 +145,39 @@ class Filter:
         return self.neg_filter(normalized_freq, l, m, n) * self.pos_filter(
             normalized_freq, l, m, n
         )
+
+    def NR_filter(self, freq):
+        """Rational filters for numerical-relativity waveforms, removing the modes stored in :attr:`Filter.model_list`.
+
+        Parameters
+        ----------
+        freq : array
+            the unit should be the same as :attr:`Filter.mass`
+
+        Raises
+        ------
+        ValueError
+            When :attr:`Filter.mass` or :attr:`Filter.chi` is not provided
+        """
+        final_rational_filter = 1
+        if not bool(self.model_list):
+            return final_rational_filter
+        else:
+            if (self.mass is None) or (self.chi is None):
+                raise ValueError(
+                    f"Mass = {self.mass}" f" and Spin = {self.chi} are needed"
+                )
+        normalized_freq = freq * self.mass
+        for mode in self.model_list:
+            if mode["p"] == "p":
+                final_rational_filter *= self.pos_filter(
+                    normalized_freq, mode["l"], mode["m"], mode["n"]
+                )
+            elif mode["p"] == "r":
+                final_rational_filter *= self.neg_filter(
+                    normalized_freq, mode["l"], mode["m"], mode["n"]
+                )
+        return final_rational_filter
 
     def total_filter(self, freq):
         """The total rational filter that removes the modes stored in :attr:`Filter.model_list`.
