@@ -111,6 +111,7 @@
 </li>
 <li><a class="reference internal" href="#module-qnm_filter.sxs_helper">qnm_filter.sxs_helper module</a><ul>
 <li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms</span></code></a><ul>
+<li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.add_filter"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.add_filter()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.get_bbh_m1"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.get_bbh_m1</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.get_bbh_m2"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.get_bbh_m2</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.get_bbh_spin1"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.get_bbh_spin1</span></code></a></li>
@@ -120,6 +121,7 @@
 <li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.import_sxs_data"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.import_sxs_data()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.pad_data"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.pad_data()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.scale_to_si"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.scale_to_si()</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.trunc_pad"><code class="docutils literal notranslate"><span class="pre">SXSWaveforms.trunc_pad()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -2276,23 +2278,55 @@ This is mainly for FFT so the time stamp should be evenly spaced, and the total 
 <p class="rubric">Methods</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.get_remnant_data" title="qnm_filter.sxs_helper.SXSWaveforms.get_remnant_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_remnant_data</span></code></a>([download])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.add_filter" title="qnm_filter.sxs_helper.SXSWaveforms.add_filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_filter</span></code></a>(lm, model_list)</p></td>
+<td><p>Apply rational filters listed in <cite>model_list</cite> to the <img class="math" src="_images/math/251130bcca0ff268c546a4648833d510199b54be.png" alt="lm"/> harmonic of the NR waveform.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.get_remnant_data" title="qnm_filter.sxs_helper.SXSWaveforms.get_remnant_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_remnant_data</span></code></a>([download])</p></td>
 <td><p>Get remnant mass and dimensionless spin from SXS catalog.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.harmonics_to_polarizations" title="qnm_filter.sxs_helper.SXSWaveforms.harmonics_to_polarizations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">harmonics_to_polarizations</span></code></a>(attr_name, iota, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.harmonics_to_polarizations" title="qnm_filter.sxs_helper.SXSWaveforms.harmonics_to_polarizations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">harmonics_to_polarizations</span></code></a>(attr_name, iota, ...)</p></td>
 <td><p>Compute two polarizations from GW harmonics stored in <cite>attr_name</cite></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.import_sxs_data" title="qnm_filter.sxs_helper.SXSWaveforms.import_sxs_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">import_sxs_data</span></code></a>(l, m, interpolate[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.import_sxs_data" title="qnm_filter.sxs_helper.SXSWaveforms.import_sxs_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">import_sxs_data</span></code></a>(l, m, interpolate[, ...])</p></td>
 <td><p>Download/Load SXS waveforms.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.pad_data" title="qnm_filter.sxs_helper.SXSWaveforms.pad_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pad_data</span></code></a>(partition, len_pow)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.pad_data" title="qnm_filter.sxs_helper.SXSWaveforms.pad_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pad_data</span></code></a>(partition, len_pow)</p></td>
 <td><p>Pad zeros on both sides of GW harmonics <code class="xref py py-attr docutils literal notranslate"><span class="pre">self.original_data</span></code>, the final length is <img class="math" src="_images/math/585f67951250ff15d6d42626c97168c9eb9d208d.png" alt="2^{\textrm{len\_pow}}"/></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.scale_to_si" title="qnm_filter.sxs_helper.SXSWaveforms.scale_to_si"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scale_to_si</span></code></a>(attr_name, mass, distance)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#qnm_filter.sxs_helper.SXSWaveforms.scale_to_si" title="qnm_filter.sxs_helper.SXSWaveforms.scale_to_si"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scale_to_si</span></code></a>(attr_name, mass, distance)</p></td>
 <td><p>Convert GW waveforms stored in <cite>attr_name</cite> from numerical-relativity's units to SI units.</p></td>
 </tr>
 </tbody>
 </table>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><strong>trunc_pad</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="qnm_filter.sxs_helper.SXSWaveforms.add_filter">
+<span class="sig-name descname"><span class="pre">add_filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/sxs_helper.html#SXSWaveforms.add_filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.sxs_helper.SXSWaveforms.add_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply rational filters listed in <cite>model_list</cite> to the <img class="math" src="_images/math/251130bcca0ff268c546a4648833d510199b54be.png" alt="lm"/> harmonic of the NR waveform.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lm</strong><span class="classifier">string</span></dt><dd><p>the <img class="math" src="_images/math/251130bcca0ff268c546a4648833d510199b54be.png" alt="lm"/> harmonic to be filtered</p>
+</dd>
+<dt><strong>model_list</strong><span class="classifier">a list of dictionaries</span></dt><dd><p>quasinormal modes to be filtered.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>ComplexData</dt><dd><p>filtered harmonic</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="qnm_filter.sxs_helper.SXSWaveforms.get_bbh_m1">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_bbh_m1</span></span><a class="headerlink" href="#qnm_filter.sxs_helper.SXSWaveforms.get_bbh_m1" title="Permalink to this definition">¶</a></dt>
@@ -2429,6 +2463,11 @@ the final length is <img class="math" src="_images/math/585f67951250ff15d6d42626
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="qnm_filter.sxs_helper.SXSWaveforms.trunc_pad">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">trunc_pad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">before</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partition</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">len_pow</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/sxs_helper.html#SXSWaveforms.trunc_pad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.sxs_helper.SXSWaveforms.trunc_pad" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
