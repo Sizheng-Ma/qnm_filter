@@ -37,7 +37,6 @@ class SXSWaveforms:
         """Constructor"""
         self.original_data = {}
         self.padded_data = {}
-        self.filtered_data = {}
         self.data_in_si = {}
 
         self.filename = kws.get("filename", None)
@@ -226,3 +225,32 @@ class SXSWaveforms:
             "plus": RealData(hp, index=time, ifo=ifo),
             "cross": RealData(hc, index=time, ifo=ifo),
         }
+
+    def add_filter(self, lm, model_list):
+        r"""Apply rational filters listed in `model_list` to the :math:`lm` harmonic of the NR waveform.
+
+        Parameters
+        ----------
+        lm : string
+            the :math:`lm` harmonic to be filtered
+        model_list : a list of dictionaries
+            quasinormal modes to be filtered.
+
+        Returns
+        -------
+        ComplexData
+            filtered harmonic
+        """
+        data = self.padded_data[lm]
+        data_in_freq = data.fft_data
+        freq = data.fft_freq
+        filter_in_freq = Filter(
+            chi=self.chif, mass=self.mf, model_list=model_list
+        ).NR_filter(freq)
+        data_in_time = np.fft.fft(filter_in_freq * data_in_freq, norm="ortho")
+        return ComplexData(data_in_time, index=data.time)
+
+    @staticmethod
+    def trunc_pad(data, before, after, partition, len_pow):
+        truncated_data = data.truncate_data(before=before, after=after)
+        return truncated_data.pad_complex_data_for_fft(partition, len_pow)
