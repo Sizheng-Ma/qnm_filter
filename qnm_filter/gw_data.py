@@ -38,6 +38,19 @@ class Filter:
                 self.model_list.append(dict(l=l, m=m, n=n))
 
     @property
+    def get_freq_list(self) -> list:
+        """Return a list of QNM frequencies"""
+        freq_list = {}
+        for mode in self.model_list:
+            this_l = mode["l"]
+            this_m = mode["m"]
+            this_n = mode["n"]
+            freq_list[str(this_l) + str(this_m) + str(this_n)] = qnm.modes_cache(
+                s=-2, l=this_l, m=this_m, n=this_n
+            )(a=self.chi)[0]
+        return freq_list
+
+    @property
     def get_spin(self) -> float:
         """Return :attr:`Filter.chi`."""
         return self.chi
