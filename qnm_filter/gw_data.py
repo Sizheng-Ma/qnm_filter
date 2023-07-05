@@ -39,7 +39,7 @@ class Filter:
 
     @property
     def get_freq_list(self) -> list:
-        """Return a list of QNM frequencies"""
+        """Return a list of QNM frequencies stored in :attr:`Filter.model_list`."""
         freq_list = {}
         for mode in self.model_list:
             this_l = mode["l"]
