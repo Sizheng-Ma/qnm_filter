@@ -74,6 +74,7 @@
     <span class="s2">&quot;evidence_parallel&quot;</span><span class="p">,</span>
     <span class="s2">&quot;save_class&quot;</span><span class="p">,</span>
     <span class="s2">&quot;load_class&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;time_to_index&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
@@ -179,6 +180,32 @@
         <span class="o">+</span> <span class="p">(</span><span class="n">initial_offset</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">num_iteration</span><span class="p">)</span> <span class="o">*</span> <span class="n">index_spacing</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">srate</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">t_array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">saved_log_evidence</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="time_to_index"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.utility.time_to_index">[docs]</a><span class="k">def</span> <span class="nf">time_to_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index_spacing</span><span class="p">,</span> <span class="n">tmin</span><span class="p">,</span> <span class="n">tmax</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Estimate `initial_offset` and `num_iteration` for the evidence calculator given physical times `tmin` and `tmax`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    index_spacing : int</span>
+<span class="sd">        the ratio between `self.srate` and the evidence&#39;s sampling rate</span>
+<span class="sd">    tmin : float</span>
+<span class="sd">        the start time of the evidence curve</span>
+<span class="sd">    tmax : float</span>
+<span class="sd">        the end time of the evidence curve</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    initial_offset : int</span>
+<span class="sd">        the index offset of the first evidence data point with respect to `self.i0_dict`</span>
+<span class="sd">    num_iteration : int</span>
+<span class="sd">        number of sampling points for the evidence curve</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">initial_offset</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">tmin</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_init</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">srate</span><span class="p">)</span>
+    <span class="n">num_iteration</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">int</span><span class="p">(((</span><span class="n">tmax</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_init</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">srate</span> <span class="o">-</span> <span class="n">initial_offset</span><span class="p">)</span> <span class="o">/</span> <span class="n">index_spacing</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">initial_offset</span><span class="p">,</span> <span class="n">num_iteration</span></div>
 
 
 <span class="k">def</span> <span class="nf">find_probability_difference</span><span class="p">(</span><span class="n">threshold</span><span class="p">,</span> <span class="n">array2d</span><span class="p">,</span> <span class="n">target_probability</span><span class="o">=</span><span class="mf">0.9</span><span class="p">):</span>

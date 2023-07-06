@@ -103,7 +103,6 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">original_data</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">padded_data</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">filtered_data</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data_in_si</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">kws</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filename&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
@@ -291,7 +290,36 @@
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">&quot;plus&quot;</span><span class="p">:</span> <span class="n">RealData</span><span class="p">(</span><span class="n">hp</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">),</span>
             <span class="s2">&quot;cross&quot;</span><span class="p">:</span> <span class="n">RealData</span><span class="p">(</span><span class="n">hc</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="p">),</span>
-        <span class="p">}</span></div></div>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="SXSWaveforms.add_filter"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.sxs_helper.SXSWaveforms.add_filter">[docs]</a>    <span class="k">def</span> <span class="nf">add_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lm</span><span class="p">,</span> <span class="n">model_list</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Apply rational filters listed in `model_list` to the :math:`lm` harmonic of the NR waveform.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        lm : string</span>
+<span class="sd">            the :math:`lm` harmonic to be filtered</span>
+<span class="sd">        model_list : a list of dictionaries</span>
+<span class="sd">            quasinormal modes to be filtered.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ComplexData</span>
+<span class="sd">            filtered harmonic</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">padded_data</span><span class="p">[</span><span class="n">lm</span><span class="p">]</span>
+        <span class="n">data_in_freq</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">fft_data</span>
+        <span class="n">freq</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">fft_freq</span>
+        <span class="n">filter_in_freq</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span>
+            <span class="n">chi</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">chif</span><span class="p">,</span> <span class="n">mass</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mf</span><span class="p">,</span> <span class="n">model_list</span><span class="o">=</span><span class="n">model_list</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">NR_filter</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+        <span class="n">data_in_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft</span><span class="p">(</span><span class="n">filter_in_freq</span> <span class="o">*</span> <span class="n">data_in_freq</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="s2">&quot;ortho&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ComplexData</span><span class="p">(</span><span class="n">data_in_time</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">time</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SXSWaveforms.trunc_pad"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.sxs_helper.SXSWaveforms.trunc_pad">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">trunc_pad</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">before</span><span class="p">,</span> <span class="n">after</span><span class="p">,</span> <span class="n">partition</span><span class="p">,</span> <span class="n">len_pow</span><span class="p">):</span>
+        <span class="n">truncated_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">truncate_data</span><span class="p">(</span><span class="n">before</span><span class="o">=</span><span class="n">before</span><span class="p">,</span> <span class="n">after</span><span class="o">=</span><span class="n">after</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">truncated_data</span><span class="o">.</span><span class="n">pad_complex_data_for_fft</span><span class="p">(</span><span class="n">partition</span><span class="p">,</span> <span class="n">len_pow</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>
