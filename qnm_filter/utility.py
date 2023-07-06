@@ -8,6 +8,7 @@ __all__ = [
     "evidence_parallel",
     "save_class",
     "load_class",
+    "time_to_index",
 ]
 
 from joblib import Parallel, delayed
@@ -113,6 +114,32 @@ def evidence_parallel(
         + (initial_offset + np.arange(num_iteration) * index_spacing) / self.srate
     )
     return t_array, np.array(saved_log_evidence)
+
+
+def time_to_index(self, index_spacing, tmin, tmax):
+    """Estimate `initial_offset` and `num_iteration` for the evidence calculator given physical times `tmin` and `tmax`.
+
+    Parameters
+    ----------
+    index_spacing : int
+        the ratio between `self.srate` and the evidence's sampling rate
+    tmin : float
+        the start time of the evidence curve
+    tmax : float
+        the end time of the evidence curve
+
+    Returns
+    -------
+    initial_offset : int
+        the index offset of the first evidence data point with respect to `self.i0_dict`
+    num_iteration : int
+        number of sampling points for the evidence curve
+    """
+    initial_offset = int((tmin - self.t_init) * self.srate)
+    num_iteration = (
+        int(((tmax - self.t_init) * self.srate - initial_offset) / index_spacing) + 1
+    )
+    return initial_offset, num_iteration
 
 
 def find_probability_difference(threshold, array2d, target_probability=0.9):
