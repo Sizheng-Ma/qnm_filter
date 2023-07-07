@@ -12,13 +12,15 @@ import copy
 import bilby
 
 
-def bilby_get_strain(ifo):
+def bilby_get_strain(ifo, time_offset):
     """Get strain data from Bilby's `Interferometer` and store the result in `Data`.
 
     Parameters
     ----------
     ifo : bilby.gw.detector.Interferometer
         An instance of `bilby.gw.detector.Interferometer`
+    time_offset : float
+        The time offset applied to data
 
     Returns
     -------
@@ -27,7 +29,7 @@ def bilby_get_strain(ifo):
     """
     return RealData(
         ifo.strain_data.time_domain_strain,
-        index=ifo.strain_data.time_array,
+        index=ifo.strain_data.time_array - time_offset,
         ifo=ifo.name,
     )
 
