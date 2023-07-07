@@ -134,6 +134,7 @@
 <li><a class="reference internal" href="#qnm_filter.utility.parallel_compute"><code class="docutils literal notranslate"><span class="pre">parallel_compute()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.utility.project_to_1d"><code class="docutils literal notranslate"><span class="pre">project_to_1d()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.utility.save_class"><code class="docutils literal notranslate"><span class="pre">save_class()</span></code></a></li>
+<li><a class="reference internal" href="#qnm_filter.utility.time_shift_from_sky"><code class="docutils literal notranslate"><span class="pre">time_shift_from_sky()</span></code></a></li>
 <li><a class="reference internal" href="#qnm_filter.utility.time_to_index"><code class="docutils literal notranslate"><span class="pre">time_to_index()</span></code></a></li>
 </ul>
 </li>
@@ -469,12 +470,14 @@ start time <code class="xref py py-attr docutils literal notranslate"><span clas
 <p>Wrapping up some Bilby functions for convenience</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="qnm_filter.bilby_helper.bilby_get_strain">
-<span class="sig-prename descclassname"><span class="pre">qnm_filter.bilby_helper.</span></span><span class="sig-name descname"><span class="pre">bilby_get_strain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ifo</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/bilby_helper.html#bilby_get_strain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.bilby_helper.bilby_get_strain" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">qnm_filter.bilby_helper.</span></span><span class="sig-name descname"><span class="pre">bilby_get_strain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ifo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_offset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/bilby_helper.html#bilby_get_strain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.bilby_helper.bilby_get_strain" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get strain data from Bilby’s <cite>Interferometer</cite> and store the result in <cite>Data</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>ifo</strong><span class="classifier">bilby.gw.detector.Interferometer</span></dt><dd><p>An instance of <cite>bilby.gw.detector.Interferometer</cite></p>
+</dd>
+<dt><strong>time_offset</strong><span class="classifier">float</span></dt><dd><p>The time offset applied to data</p>
 </dd>
 </dl>
 </dd>
@@ -2630,6 +2633,32 @@ whose integrations are normalized to be 1.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>filename</strong><span class="classifier">string</span></dt><dd><p>the file name to be dumped</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="qnm_filter.utility.time_shift_from_sky">
+<span class="sig-prename descclassname"><span class="pre">qnm_filter.utility.</span></span><span class="sig-name descname"><span class="pre">time_shift_from_sky</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ifo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ra</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_init</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qnm_filter/utility.html#time_shift_from_sky"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qnm_filter.utility.time_shift_from_sky" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get time offset with respect to geocenter given the information</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>ifo</strong><span class="classifier">str</span></dt><dd><p>name of interferometer.</p>
+</dd>
+<dt><strong>ra</strong><span class="classifier">float</span></dt><dd><p>source right ascension, in radian.</p>
+</dd>
+<dt><strong>dec</strong><span class="classifier">float</span></dt><dd><p>source declination, in radian.</p>
+</dd>
+<dt><strong>t_init</strong><span class="classifier">float</span></dt><dd><p>trucation time (start time of analysis segment) at geocenter.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>dt_ifo</strong><span class="classifier">float</span></dt><dd><p>the time offset</p>
 </dd>
 </dl>
 </dd>
