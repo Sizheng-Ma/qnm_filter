@@ -78,13 +78,15 @@
 <span class="kn">import</span> <span class="nn">bilby</span>
 
 
-<div class="viewcode-block" id="bilby_get_strain"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.bilby_helper.bilby_get_strain">[docs]</a><span class="k">def</span> <span class="nf">bilby_get_strain</span><span class="p">(</span><span class="n">ifo</span><span class="p">):</span>
+<div class="viewcode-block" id="bilby_get_strain"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.bilby_helper.bilby_get_strain">[docs]</a><span class="k">def</span> <span class="nf">bilby_get_strain</span><span class="p">(</span><span class="n">ifo</span><span class="p">,</span> <span class="n">time_offset</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get strain data from Bilby&#39;s `Interferometer` and store the result in `Data`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    ifo : bilby.gw.detector.Interferometer</span>
 <span class="sd">        An instance of `bilby.gw.detector.Interferometer`</span>
+<span class="sd">    time_offset : float</span>
+<span class="sd">        The time offset applied to data</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -93,7 +95,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">RealData</span><span class="p">(</span>
         <span class="n">ifo</span><span class="o">.</span><span class="n">strain_data</span><span class="o">.</span><span class="n">time_domain_strain</span><span class="p">,</span>
-        <span class="n">index</span><span class="o">=</span><span class="n">ifo</span><span class="o">.</span><span class="n">strain_data</span><span class="o">.</span><span class="n">time_array</span><span class="p">,</span>
+        <span class="n">index</span><span class="o">=</span><span class="n">ifo</span><span class="o">.</span><span class="n">strain_data</span><span class="o">.</span><span class="n">time_array</span> <span class="o">-</span> <span class="n">time_offset</span><span class="p">,</span>
         <span class="n">ifo</span><span class="o">=</span><span class="n">ifo</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
     <span class="p">)</span></div>
 
