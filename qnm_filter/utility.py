@@ -9,6 +9,7 @@ __all__ = [
     "save_class",
     "load_class",
     "time_to_index",
+    "time_shift_from_sky",
 ]
 
 from joblib import Parallel, delayed
@@ -19,6 +20,7 @@ from scipy.optimize import fsolve
 from scipy.interpolate import interp1d
 import warnings
 import pickle
+import lal
 
 
 def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
@@ -298,3 +300,28 @@ def load_class(filename):
     with open(filename, "rb") as file:
         fit = pickle.load(file)
     return fit
+
+
+def time_shift_from_sky(ifo, ra, dec, t_init):
+    """Get time offset with respect to geocenter given the information
+
+    Parameters
+    ----------
+    ifo : str
+        name of interferometer.
+    ra : float
+        source right ascension, in radian.
+    dec : float
+        source declination, in radian.
+    t_init : float
+        trucation time (start time of analysis segment) at geocenter.
+
+    Returns
+    -------
+    dt_ifo : float
+        the time offset
+    """
+    tgps = lal.LIGOTimeGPS(t_init)
+    location = lal.cached_detector_by_prefix[ifo].location
+    dt_ifo = lal.TimeDelayFromEarthCenter(location, ra, dec, tgps)
+    return dt_ifo
