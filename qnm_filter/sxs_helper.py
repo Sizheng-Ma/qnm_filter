@@ -42,6 +42,7 @@ class SXSWaveforms:
         self.filename = kws.get("filename", None)
         self.mf = None
         self.chif = None
+        self.chif_vec = None
 
     def import_sxs_data(
         self,
@@ -135,6 +136,7 @@ class SXSWaveforms:
             warnings.warn("Overwriting chif: {}".format(self.chif))
         self.mf = metadata["remnant_mass"]
         spinvec = metadata["remnant_dimensionless_spin"]
+        self.chif_vec = spinvec
         self.chif = np.sqrt(np.sum(np.array(spinvec) ** 2))
 
     @property
