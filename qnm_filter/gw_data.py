@@ -230,6 +230,13 @@ class DataBase(pd.Series):
         result.__dict__.update(self.__dict__)
         return result
 
+    def __add__(self, other):
+        if all(self.index.values != other.index.values):
+            raise ValueError("Two arrays don't have the same time")
+        return DataBase(
+            self.values + other.values, index=self.index.values, ifo=self.ifo
+        )
+
     @property
     def time(self):
         """Time stamps."""
@@ -254,6 +261,13 @@ class ComplexData(DataBase):
     ifo : str
         name of interferometer.
     """
+
+    def __add__(self, other):
+        if all(self.index.values != other.index.values):
+            raise ValueError("Two arrays don't have the same time")
+        return ComplexData(
+            self.values + other.values, index=self.index.values, ifo=self.ifo
+        )
 
     def pad_complex_data_for_fft(self, partition, len_pow):
         """Pad zeros on both sides for FFT
@@ -328,6 +342,13 @@ class RealData(DataBase):
     ifo : str
         name of interferometer.
     """
+
+    def __add__(self, other):
+        if all(self.index.values != other.index.values):
+            raise ValueError("Two arrays don't have the same time")
+        return RealData(
+            self.values + other.values, index=self.index.values, ifo=self.ifo
+        )
 
     @property
     def fft_freq(self):
