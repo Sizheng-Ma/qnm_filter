@@ -70,8 +70,8 @@
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Network&quot;</span><span class="p">]</span>
 
 <span class="kn">from</span> <span class="nn">.gw_data</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.utility</span> <span class="kn">import</span> <span class="n">time_shift_from_sky</span>
 <span class="kn">import</span> <span class="nn">h5py</span>
-<span class="kn">import</span> <span class="nn">lal</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">scipy.linalg</span> <span class="k">as</span> <span class="nn">sl</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
@@ -188,14 +188,12 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_init</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;t_init is not provided&quot;</span><span class="p">)</span>
-        <span class="n">tgps</span> <span class="o">=</span> <span class="n">lal</span><span class="o">.</span><span class="n">LIGOTimeGPS</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t_init</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">ifo</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">original_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span> <span class="o">==</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">shifted_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_init</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">location</span> <span class="o">=</span> <span class="n">lal</span><span class="o">.</span><span class="n">cached_detector_by_prefix</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span><span class="o">.</span><span class="n">location</span>
-                <span class="n">dt_ifo</span> <span class="o">=</span> <span class="n">lal</span><span class="o">.</span><span class="n">TimeDelayFromEarthCenter</span><span class="p">(</span><span class="n">location</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">tgps</span><span class="p">)</span>
+                <span class="n">dt_ifo</span> <span class="o">=</span> <span class="n">time_shift_from_sky</span><span class="p">(</span><span class="n">ifo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_init</span><span class="p">)</span>
                 <span class="n">shifted_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_init</span> <span class="o">+</span> <span class="n">dt_ifo</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">start_times</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span> <span class="o">=</span> <span class="n">shifted_time</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">shifted_time</span> <span class="o">&lt;</span> <span class="n">data</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>

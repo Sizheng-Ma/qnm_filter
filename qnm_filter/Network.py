@@ -4,8 +4,8 @@
 __all__ = ["Network"]
 
 from .gw_data import *
+from .utility import time_shift_from_sky
 import h5py
-import lal
 import numpy as np
 import scipy.linalg as sl
 import warnings
@@ -122,14 +122,12 @@ class Network(object):
         """
         if self.t_init == None:
             raise ValueError("t_init is not provided")
-        tgps = lal.LIGOTimeGPS(self.t_init)
 
         for ifo, data in self.original_data.items():
             if self.ra == None or self.dec == None:
                 shifted_time = self.t_init
             else:
-                location = lal.cached_detector_by_prefix[ifo].location
-                dt_ifo = lal.TimeDelayFromEarthCenter(location, self.ra, self.dec, tgps)
+                dt_ifo = time_shift_from_sky(ifo, self.ra, self.dec, self.t_init)
                 shifted_time = self.t_init + dt_ifo
             self.start_times[ifo] = shifted_time
             if not (data.time[0] < shifted_time < data.time[-1]):
