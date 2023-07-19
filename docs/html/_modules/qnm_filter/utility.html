@@ -75,6 +75,7 @@
     <span class="s2">&quot;save_class&quot;</span><span class="p">,</span>
     <span class="s2">&quot;load_class&quot;</span><span class="p">,</span>
     <span class="s2">&quot;time_to_index&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;time_shift_from_sky&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
@@ -85,6 +86,7 @@
 <span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">interp1d</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">lal</span>
 
 
 <div class="viewcode-block" id="parallel_compute"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.utility.parallel_compute">[docs]</a><span class="k">def</span> <span class="nf">parallel_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">M_arr</span><span class="p">,</span> <span class="n">chi_arr</span><span class="p">,</span> <span class="n">num_cpu</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -364,6 +366,31 @@
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
         <span class="n">fit</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">fit</span></div>
+
+
+<div class="viewcode-block" id="time_shift_from_sky"><a class="viewcode-back" href="../../qnm_filter.html#qnm_filter.utility.time_shift_from_sky">[docs]</a><span class="k">def</span> <span class="nf">time_shift_from_sky</span><span class="p">(</span><span class="n">ifo</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">t_init</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get time offset with respect to geocenter given the information</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ifo : str</span>
+<span class="sd">        name of interferometer.</span>
+<span class="sd">    ra : float</span>
+<span class="sd">        source right ascension, in radian.</span>
+<span class="sd">    dec : float</span>
+<span class="sd">        source declination, in radian.</span>
+<span class="sd">    t_init : float</span>
+<span class="sd">        trucation time (start time of analysis segment) at geocenter.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dt_ifo : float</span>
+<span class="sd">        the time offset</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tgps</span> <span class="o">=</span> <span class="n">lal</span><span class="o">.</span><span class="n">LIGOTimeGPS</span><span class="p">(</span><span class="n">t_init</span><span class="p">)</span>
+    <span class="n">location</span> <span class="o">=</span> <span class="n">lal</span><span class="o">.</span><span class="n">cached_detector_by_prefix</span><span class="p">[</span><span class="n">ifo</span><span class="p">]</span><span class="o">.</span><span class="n">location</span>
+    <span class="n">dt_ifo</span> <span class="o">=</span> <span class="n">lal</span><span class="o">.</span><span class="n">TimeDelayFromEarthCenter</span><span class="p">(</span><span class="n">location</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">tgps</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dt_ifo</span></div>
 </pre></div>
 
            </div>
