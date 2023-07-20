@@ -133,3 +133,4 @@ dmypy.json
 
 # Others
 .vscode
+run_tests/
