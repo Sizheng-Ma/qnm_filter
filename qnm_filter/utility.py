@@ -202,7 +202,10 @@ def find_credible_region(array2d, num_cpu=-1, target_probability=0.9):
 
     # interpolation is preferred when the sample density is insufficient
     interp_probability = interp1d(sorted_probability, sorted_likelihood)
-    return interp_probability(np.log(target_probability))
+    if min(sorted_probability) <= np.log(target_probability) <= max(sorted_probability):
+        return interp_probability(np.log(target_probability))
+    else:
+        return np.nan
 
 
 def credibility_of_mass_spin(array2d, self, mass, spin, model_list, num_cpu=-1):
@@ -216,7 +219,10 @@ def credibility_of_mass_spin(array2d, self, mass, spin, model_list, num_cpu=-1):
     )
     sorted_probability = np.array(sorted_probability)
     interp_probability = interp1d(sorted_likelihood, sorted_probability)
-    return 1 - np.exp(interp_probability(this_likelihood))
+    if min(sorted_likelihood) <= this_likelihood <= max(sorted_likelihood):
+        return 1 - np.exp(interp_probability(this_likelihood))
+    else:
+        return np.nan
 
 
 def project_to_1d(array2d, delta_mass, delta_chi):
