@@ -221,8 +221,10 @@ def credibility_of_mass_spin(array2d, self, mass, spin, model_list, num_cpu=-1):
     interp_probability = interp1d(sorted_likelihood, sorted_probability)
     if min(sorted_likelihood) <= this_likelihood <= max(sorted_likelihood):
         return 1 - np.exp(interp_probability(this_likelihood))
-    else:
-        return np.nan
+    elif this_likelihood<=min(sorted_likelihood):
+        return 0
+    elif this_likelihood>=max(sorted_likelihood):
+        return 1
 
 
 def project_to_1d(array2d, delta_mass, delta_chi):
