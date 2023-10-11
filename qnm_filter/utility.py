@@ -10,7 +10,7 @@ __all__ = [
     "load_class",
     "time_to_index",
     "time_shift_from_sky",
-    "credibility_of_mass_spin",
+    "credibility_of_mass_spin","pvalue_1d"
 ]
 
 from joblib import Parallel, delayed
@@ -252,6 +252,20 @@ def project_to_1d(array2d, delta_mass, delta_chi):
     normalized_mass /= np.sum(normalized_mass * delta_mass)
     normalized_chi /= np.sum(normalized_chi * delta_chi)
     return normalized_mass, normalized_chi
+
+def pvalue_1d(array2d, delta_mass, delta_chi, massspace, spinspace, mass, spin):
+    log_evidence = logsumexp(array2d)
+    normalized_mass = np.exp(logsumexp(array2d, axis=0) - log_evidence)
+    normalized_chi = np.exp(logsumexp(array2d, axis=1) - log_evidence)
+
+    normalized_mass /= np.sum(normalized_mass * delta_mass)
+    normalized_chi /= np.sum(normalized_chi * delta_chi)
+    
+    thresholdmass = interp1d(massspace, normalized_mass)(mass)
+    thresholdspin = interp1d(spinspace, normalized_chi)(spin)
+    mass_prob = np.sum(normalized_mass[normalized_mass > thresholdmass]) * delta_mass
+    spin_prob = np.sum(normalized_chi[normalized_chi > thresholdspin]) * delta_chi
+    return mass_prob, spin_prob
 
 
 def pad_data_for_fft(data, partition, len_pow) -> None:
