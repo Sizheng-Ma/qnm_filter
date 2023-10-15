@@ -2,6 +2,7 @@
 """
 __all__ = [
     "parallel_compute",
+    "parallel_compute_reim",
     "find_credible_region",
     "project_to_1d",
     "pad_data_for_fft",
@@ -10,7 +11,7 @@ __all__ = [
     "load_class",
     "time_to_index",
     "time_shift_from_sky",
-    "credibility_of_mass_spin","pvalue_1d"
+    "credibility_of_mass_spin","pvalue_1d","credibility_of_mass_spin_reim"
 ]
 
 from joblib import Parallel, delayed
@@ -48,6 +49,14 @@ def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
     flatten_array = [(i, j) for i in M_arr for j in chi_arr]
     results = Parallel(num_cpu)(
         delayed(self.likelihood_vs_mass_spin)(i, j, **kwargs) for i, j in flatten_array
+    )
+    reshaped_results = np.reshape(results, (len(M_arr), len(chi_arr))).T
+    return reshaped_results, logsumexp(reshaped_results)
+
+def parallel_compute_reim(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
+    flatten_array = [(i, j) for i in M_arr for j in chi_arr]
+    results = Parallel(num_cpu)(
+        delayed(self.likelihood_vs_mass_spin_reim)(i, j, **kwargs) for i, j in flatten_array
     )
     reshaped_results = np.reshape(results, (len(M_arr), len(chi_arr))).T
     return reshaped_results, logsumexp(reshaped_results)
@@ -210,6 +219,25 @@ def find_credible_region(array2d, num_cpu=-1, target_probability=0.9):
 
 def credibility_of_mass_spin(array2d, self, mass, spin, model_list, num_cpu=-1):
     this_likelihood = self.likelihood_vs_mass_spin(mass, spin, model_list=model_list)
+
+    # iterate over the inputted log likelihoods and compute the distance of their log probability from the desired value.
+    sorted_likelihood = np.sort(array2d.flatten())
+
+    sorted_probability = Parallel(num_cpu)(
+        delayed(find_probability_difference)(i, array2d) for i in sorted_likelihood
+    )
+    sorted_probability = np.array(sorted_probability)
+    interp_probability = interp1d(sorted_likelihood, sorted_probability)
+    if min(sorted_likelihood) <= this_likelihood <= max(sorted_likelihood):
+        return 1 - np.exp(interp_probability(this_likelihood))
+    elif this_likelihood<=min(sorted_likelihood):
+        return 0
+    elif this_likelihood>=max(sorted_likelihood):
+        return 1
+    
+    
+def credibility_of_mass_spin_reim(array2d, self, mass, spin, num_cpu=-1):
+    this_likelihood = self.likelihood_vs_mass_spin_reim(mass, spin)
 
     # iterate over the inputted log likelihoods and compute the distance of their log probability from the desired value.
     sorted_likelihood = np.sort(array2d.flatten())
