@@ -265,6 +265,19 @@ class Network(object):
                 filter_in_freq * data_in_freq, norm="ortho", n=len(data)
             )
             self.filtered_data[ifo] = RealData(ifft, index=data.index, ifo=ifo)
+            
+    def add_filter_reim(self, re, im):
+        """Apply rational filters to :attr:`Network.original_data` and store
+        the filtered data in :attr:`Network.filtered_data`."""
+        for ifo, data in self.original_data.items():
+            data_in_freq = data.fft_data
+            freq = data.fft_freq
+            omega = re + 1j*im
+            filter_in_freq = (-freq-omega)/(-freq-np.conj(omega)) * (-freq + np.conj(omega)) / (-freq + omega)
+            ifft = np.fft.irfft(
+                filter_in_freq**2 * data_in_freq, norm="ortho", n=len(data)
+            )
+            self.filtered_data[ifo] = RealData(ifft, index=data.index, ifo=ifo)
 
     def likelihood_vs_mass_spin(self, M_est, chi_est, **kwargs) -> float:
         """Compute likelihood for the given mass and spin.
@@ -283,6 +296,12 @@ class Network(object):
         model_list = kwargs.pop("model_list")
         self.add_filter(mass=M_est, chi=chi_est, model_list=model_list)
         return self.compute_likelihood(apply_filter=True)
+    
+   
+    def likelihood_vs_mass_spin_reim(self, re, im) -> float:
+        self.add_filter_reim(re, im)
+        return self.compute_likelihood(apply_filter=True)
+
 
     def compute_SNR(self, data, template, ifo, optimal) -> float:
         """Compute matched-filter/optimal SNR.
