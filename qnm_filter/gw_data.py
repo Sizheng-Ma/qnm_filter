@@ -219,6 +219,11 @@ class Data(pd.Series):
             raise ValueError('That is not a FFT window that has been implemented.')
         return np.fft.rfft(windowed_signal, norm="ortho")
 
+    def add_tukey(self, alpha):
+        """Add a Tukey window in the time domain"""
+        windowed_signal = ss.windows.tukey(len(self.values), alpha=alpha) * self.values
+        return Data(windowed_signal, index=self.index.values, ifo=self.ifo)
+
     def condition(
         self,
         t0=None,
