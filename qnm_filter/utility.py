@@ -10,6 +10,7 @@ __all__ = [
     "load_class",
     "time_to_index",
     "time_shift_from_sky",
+    "posterior_quantile_2d",
 ]
 
 from joblib import Parallel, delayed
@@ -144,7 +145,7 @@ def time_to_index(self, index_spacing, tmin, tmax):
     return initial_offset, num_iteration
 
 
-def find_probability_difference(threshold, array2d, target_probability=0.9):
+def find_probability_difference(threshold, array2d):
     """Calculates the difference between the log probability of sampling array2d above the threshold and log target_probability
 
     Parameters
@@ -153,13 +154,11 @@ def find_probability_difference(threshold, array2d, target_probability=0.9):
         value to consider the probability of sampling above
     array2d : ndarray
         2D array of sampling log likelihood as a function of mass and spin
-    target_probability : float, optional
-        function returns 0 if the probability of sampling above the level = target_probability, by default 0.9
 
     Returns
     -------
     float
-        difference between the log probability of sampling array2d above the threshold and log target_probability
+        log probability of the given sampling array2d above the threshold
     """
     tot = logsumexp(array2d)
     region = array2d[array2d > threshold]
@@ -168,7 +167,7 @@ def find_probability_difference(threshold, array2d, target_probability=0.9):
     else:
         region_tot = logsumexp(region)
         prob = region_tot - tot
-    return prob - np.log(target_probability)
+    return prob
 
 
 def find_credible_region(array2d, num_cpu=-1, target_probability=0.9):
@@ -197,14 +196,55 @@ def find_credible_region(array2d, num_cpu=-1, target_probability=0.9):
     sorted_likelihood = np.sort(array2d.flatten())
 
     sorted_probability = Parallel(num_cpu)(
-        delayed(find_probability_difference)(i, array2d, target_probability)
-        for i in sorted_likelihood
+        delayed(find_probability_difference)(i, array2d) for i in sorted_likelihood
     )
     sorted_probability = np.array(sorted_probability)
 
     # interpolation is preferred when the sample density is insufficient
     interp_probability = interp1d(sorted_probability, sorted_likelihood)
-    return interp_probability(0)
+    return interp_probability(np.log(target_probability))
+
+
+def posterior_quantile_2d(array2d, fit, mass, spin, model_list, num_cpu=-1):
+    """Compute the posterior quantile of the queried mass and spin
+
+    Parameters
+    ----------
+    array2d : ndarray
+        2D array of sampling log likelihood as a function of mass and spin
+    fit : Network
+        a Network object
+    mass : float
+        the queried mass
+    spin : float
+        the queried spin
+    model_list : a list of dictionaries
+        quasinormal modes to be filtered
+    num_cpu : int, optional
+        integer to be based to Parallel as n_jobs, by default -1
+
+    Returns
+    -------
+    float
+        the computed posterior quantile
+    """
+    this_likelihood = fit.likelihood_vs_mass_spin(mass, spin, model_list=model_list)
+
+    # iterate over the inputted log likelihoods and compute the distance of
+    # their log probability from the desired value.
+    sorted_likelihood = np.sort(array2d.flatten())
+
+    sorted_probability = Parallel(num_cpu)(
+        delayed(find_probability_difference)(i, array2d) for i in sorted_likelihood
+    )
+    sorted_probability = np.array(sorted_probability)
+    interp_probability = interp1d(sorted_likelihood, sorted_probability)
+    if min(sorted_likelihood) <= this_likelihood <= max(sorted_likelihood):
+        return np.exp(interp_probability(this_likelihood))
+    elif this_likelihood <= min(sorted_likelihood):
+        return 0
+    elif this_likelihood >= max(sorted_likelihood):
+        return 1
 
 
 def project_to_1d(array2d, delta_mass, delta_chi):
