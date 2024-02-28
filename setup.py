@@ -24,5 +24,8 @@ if __name__ == "__main__":
             "qnm",
             "lalsuite",
             "matplotlib",
+            "joblib",
+            "bilby",
+            "sxs",
         ],  # TODO: change the order
     )
