@@ -504,7 +504,7 @@ class Noise:
         Data
             autocorrelation function
         """
-        fs = 2 * (psd.index[-1] - psd.index[0])
+        fs = 2 * psd.index[-1]
         rho = 0.5 * np.fft.irfft(psd) * fs
         return RealData(rho, index=np.arange(len(rho)) / fs, ifo=self.ifo)
 
