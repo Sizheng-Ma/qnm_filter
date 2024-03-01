@@ -82,6 +82,8 @@ def set_bilby_ifo(
     sampling_frequency,
     duration,
     start_time,
+    minimum_frequency,
+    maximum_frequency,
     zero_noise=False,
     name=None,
     length=0,
@@ -103,6 +105,10 @@ def set_bilby_ifo(
         in second. The duration of the generated time series
     start_time : float
         in second. The start time of the generated time series
+    minimum_frequency : float
+        in Hz. Minimum frequency to analyse for detector.
+    maximum_frequency : float
+        in Hz. Maximum frequency to analyse for detector.
     zero_noise : bool, optional
         if ture, returns pure waveform strain w/o noise, by default False
     name : string, optional
@@ -129,8 +135,8 @@ def set_bilby_ifo(
         power_spectral_density=Noise.bilby_psd,
         name=name,
         length=length,
-        minimum_frequency=min(Noise.psd.time),
-        maximum_frequency=max(Noise.psd.time),
+        minimum_frequency=minimum_frequency,
+        maximum_frequency=maximum_frequency,
         latitude=latitude,
         longitude=longitude,
         elevation=elevation,
