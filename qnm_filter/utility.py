@@ -242,9 +242,9 @@ def posterior_quantile_2d(array2d, fit, mass, spin, model_list, num_cpu=-1):
     if min(sorted_likelihood) <= this_likelihood <= max(sorted_likelihood):
         return np.exp(interp_probability(this_likelihood))
     elif this_likelihood <= min(sorted_likelihood):
-        return 0
-    elif this_likelihood >= max(sorted_likelihood):
         return 1
+    elif this_likelihood >= max(sorted_likelihood):
+        return 0
 
 
 def project_to_1d(array2d, delta_mass, delta_chi):
