@@ -504,7 +504,12 @@ class Noise:
         Data
             autocorrelation function
         """
-        fs = 2 * (psd.index[-1] - psd.index[0])
+        fs = 2 * psd.index[-1]
+        if psd.index[0] != 0:
+            raise ValueError("PSD frequency-series is expected to start at 0 Hz")
+        deltaf = np.diff(psd.index)
+        if not all(abs(deltaf - deltaf[0]) < 1e-8):
+            raise ValueError("PSD frequency-series is expected to be evenly spaced")
         rho = 0.5 * np.fft.irfft(psd) * fs
         return RealData(rho, index=np.arange(len(rho)) / fs, ifo=self.ifo)
 
