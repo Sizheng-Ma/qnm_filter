@@ -11,6 +11,7 @@ __all__ = [
     "time_to_index",
     "time_shift_from_sky",
     "posterior_quantile_2d",
+    "posterior_quantile_1d",
 ]
 
 from joblib import Parallel, delayed
@@ -272,6 +273,46 @@ def project_to_1d(array2d, delta_mass, delta_chi):
     normalized_mass /= np.sum(normalized_mass * delta_mass)
     normalized_chi /= np.sum(normalized_chi * delta_chi)
     return normalized_mass, normalized_chi
+
+
+def posterior_quantile_1d(
+    array2d, delta_mass, delta_chi, massspace, spinspace, mass, spin
+):
+    log_evidence = logsumexp(array2d)
+    normalized_mass = np.exp(logsumexp(array2d, axis=0) - log_evidence)
+    normalized_chi = np.exp(logsumexp(array2d, axis=1) - log_evidence)
+
+    normalized_mass /= np.sum(normalized_mass * delta_mass)
+    normalized_chi /= np.sum(normalized_chi * delta_chi)
+
+    func_mass = interp1d(massspace, normalized_mass)
+    func_chi = interp1d(spinspace, normalized_chi)
+
+    massspace_finer = np.arange(
+        massspace[0] + 1e-6, massspace[-1] - 1e-6, delta_mass / 100
+    )
+    spinspace_finer = np.arange(spinspace[0], spinspace[-1], delta_chi / 100)
+
+    normalized_mass_finer = func_mass(massspace_finer)
+    normalized_spin_finer = func_chi(spinspace_finer)
+
+    normalized_mass_finer /= np.sum(normalized_mass_finer * delta_mass / 100)
+    normalized_spin_finer /= np.sum(normalized_spin_finer * delta_chi / 100)
+
+    thresholdmass = interp1d(massspace_finer, normalized_mass_finer)(mass)
+    thresholdspin = interp1d(spinspace_finer, normalized_spin_finer)(spin)
+
+    mass_prob = (
+        np.sum(normalized_mass_finer[normalized_mass_finer > thresholdmass])
+        * delta_mass
+        / 100
+    )
+    spin_prob = (
+        np.sum(normalized_spin_finer[normalized_spin_finer > thresholdspin])
+        * delta_chi
+        / 100
+    )
+    return mass_prob, spin_prob
 
 
 def pad_data_for_fft(data, partition, len_pow) -> None:
