@@ -170,39 +170,36 @@ def find_probability_difference(threshold, array2d):
     return prob
 
 
-def find_credible_region(array2d, num_cpu=-1, target_probability=0.9):
-    """Compute the log likelihood contour that encloses the desired probability.
-
-    Parameters
-    ----------
-    array2d : ndarray
-        2D array of sampling log likelihood as a function of mass and spin
-    num_cpu : int, optional
-        number of CPUs used for parallelization, by default -1
-    target_probability : float, optional
-        desired probability, by default 0.9
-
-    Returns
-    -------
-    result : float
-        the log likelihood above which has the desired probability.
-
-    Raises
-    ------
-    ValueError
-        when the target log likelihood cannot be found.
+def find_credible_region(loglikelihood_grid, target_probability=0.9):
     """
-    # iterate over the inputted log likelihoods and compute the distance of their log probability from the desired value.
-    sorted_likelihood = np.sort(array2d.flatten())
+    Calculate the log-likelihood value which contains (100*level)% of the
+    total likelihood volume, interpolating between grid points.
+    """
+    sorted_likelihood = np.sort(loglikelihood_grid.flatten())
 
-    sorted_probability = Parallel(num_cpu)(
-        delayed(find_probability_difference)(i, array2d) for i in sorted_likelihood
+    # Compute the cumulative sum of the likelihoods, and normalize so that
+    # the total sum is 1
+    sorted_likelihood_sum = np.logaddexp.accumulate(sorted_likelihood)
+    sorted_likelihood_sum -= sorted_likelihood_sum[-1]
+
+    # Find the likelihoods that are below and above the desired level, which
+    # we will interpolate between
+    mask_below = sorted_likelihood_sum < np.log(1-target_probability)
+    mask_above = sorted_likelihood_sum > np.log(1-target_probability)
+
+    likelihood_below = sorted_likelihood[mask_below][-1]
+    likelihood_above = sorted_likelihood[mask_above][0]
+
+    likelihood_sum_below = sorted_likelihood_sum[mask_below][-1]
+    likelihood_sum_above = sorted_likelihood_sum[mask_above][0]
+
+    # Interpolate
+    interp = interp1d(
+        [likelihood_sum_below, likelihood_sum_above],
+        [likelihood_below, likelihood_above]
     )
-    sorted_probability = np.array(sorted_probability)
 
-    # interpolation is preferred when the sample density is insufficient
-    interp_probability = interp1d(sorted_probability, sorted_likelihood)
-    return interp_probability(np.log(target_probability))
+    return interp(np.log(1-target_probability))
 
 
 def posterior_quantile_2d(array2d, fit, mass, spin, model_list, num_cpu=-1):
