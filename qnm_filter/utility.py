@@ -170,7 +170,7 @@ def find_probability_difference(threshold, array2d):
     return prob
 
 
-def find_credible_region(loglikelihood_grid, level=0.9):
+def find_credible_region(loglikelihood_grid, target_probability=0.9):
     """
     Calculate the log-likelihood value which contains (100*level)% of the
     total likelihood volume, interpolating between grid points.
@@ -184,8 +184,8 @@ def find_credible_region(loglikelihood_grid, level=0.9):
 
     # Find the likelihoods that are below and above the desired level, which
     # we will interpolate between
-    mask_below = sorted_likelihood_sum < np.log(1-level)
-    mask_above = sorted_likelihood_sum > np.log(1-level)
+    mask_below = sorted_likelihood_sum < np.log(1-target_probability)
+    mask_above = sorted_likelihood_sum > np.log(1-target_probability)
 
     likelihood_below = sorted_likelihood[mask_below][-1]
     likelihood_above = sorted_likelihood[mask_above][0]
@@ -199,7 +199,7 @@ def find_credible_region(loglikelihood_grid, level=0.9):
         [likelihood_below, likelihood_above]
     )
 
-    return interp(np.log(1-level))
+    return interp(np.log(1-target_probability))
 
 
 def posterior_quantile_2d(array2d, fit, mass, spin, model_list, num_cpu=-1):
