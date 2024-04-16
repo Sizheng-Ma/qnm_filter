@@ -425,7 +425,7 @@ class RealData(DataBase):
             cond_data = raw_data
 
         if ds and ds > 1:
-            cond_data = ss.decimate(cond_data, ds, zero_phase=True)
+            cond_data = cond_data[::ds] #ss.decimate(cond_data, ds, zero_phase=True)
         cond_time = raw_time[::ds]
 
         N = len(cond_data)
