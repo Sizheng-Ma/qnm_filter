@@ -284,24 +284,35 @@ class Network(object):
         self.add_filter(mass=M_est, chi=chi_est, model_list=model_list)
         return self.compute_likelihood(apply_filter=True)
 
-    def compute_SNR(self, data, template, ifo, optimal) -> float:
+
+    def compute_SNR(self, template_attr, data_attr, optimal) -> float:
         """Compute matched-filter/optimal SNR.
 
         Parameters
         ----------
-        data : ndarray
-            Time-series data
-        template : ndarray
-            Ringdown template
-        ifo : string
-            Name of interferometer
+        template_attr : string
+            Name of template dictionary
+        data_attr : string or None
+            Name of data dictionary
         optimal: bool
             Compute optimal SNR
         """
-        template_w = sl.cho_solve((self.cholesky_L[ifo], True), template)
-        snr_opt = np.sqrt(np.dot(template, template_w))
+        template = getattr(self, template_attr)
+        data = getattr(self, data_attr) if data_attr is not None else None
+
+        template = self.truncate_data(template)
+        template_w = {}
+        snr_opt = {}
+        snr= {}
+
+        for ifo, timeseries in template.items():
+            template_w[ifo] = sl.cho_solve((self.cholesky_L[ifo], True), timeseries)
+            snr_opt[ifo] = np.sqrt(np.dot(timeseries, template_w[ifo]))
         if optimal:
-            return snr_opt
+            return np.linalg.norm(list(snr_opt.values()))
+        
         else:
-            snr = np.dot(data, template_w) / snr_opt
-            return snr
+            data = self.truncate_data(data)
+            for ifo, timeseries in data.items():
+                snr[ifo] = np.dot(timeseries, template_w[ifo]) / snr_opt[ifo]
+            return np.linalg.norm(list(snr.values()))
