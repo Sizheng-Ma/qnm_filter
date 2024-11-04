@@ -277,7 +277,7 @@ class ComplexData(DataBase):
         partition : int
             fraction of zeros to be padded on the left
         len_pow : int
-            the final length of padded data is :math:`2^{\textrm{len\_pow}}`
+            the final length of padded data is :math:`2^{\textrm{len_pow}}`
 
         Returns
         -------
