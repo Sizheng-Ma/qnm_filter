@@ -96,6 +96,30 @@ class Filter:
         """
         omega = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
         return (normalized_freq - omega) / (normalized_freq - np.conj(omega))
+    
+    def q_pos_filter(self, normalized_freq, l, m, n):
+        r"""The positive rational filter:
+
+        .. math::
+            \frac{\omega-\omega_{lmn}}{\omega-\omega_{lmn}^*}
+
+        Parameters
+        ----------
+        normalized_freq : array
+            in remnant mass, frequencies that rational filters are evaluated at.
+        l : int
+            angular index
+        m : int
+            angular index
+        n : int
+            overtone index
+
+        Returns
+        -------
+        array
+        """
+        omega = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
+        return (normalized_freq - 2*omega) / (normalized_freq - np.conj(2*omega))
 
     def neg_filter(self, normalized_freq, l, m, n):
         r"""The negative rational filter:
@@ -120,6 +144,30 @@ class Filter:
         """
         omega = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
         return (normalized_freq + np.conj(omega)) / (normalized_freq + omega)
+    
+    def q_neg_filter(self, normalized_freq, l, m, n):
+        r"""The negative rational filter:
+
+        .. math::
+            \frac{\omega+\omega_{lmn}^*}{\omega+\omega_{lmn}}
+
+        Parameters
+        ----------
+        normalized_freq : array
+            in remnant mass, frequencies that rational filters are evaluated at.
+        l : int
+            angular index
+        m : int
+            angular index
+        n : int
+            overtone index
+
+        Returns
+        -------
+        array
+        """
+        omega = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
+        return (normalized_freq + 2*np.conj(omega)) / (normalized_freq + 2*omega)
 
     def single_filter(self, normalized_freq, l, m, n):
         r"""A combination of the negative and postive rational filters
@@ -177,6 +225,13 @@ class Filter:
                 final_rational_filter *= self.neg_filter(
                     normalized_freq, mode["l"], mode["m"], mode["n"]
                 )
+                
+        final_rational_filter *= self.q_pos_filter(
+            normalized_freq, 2, 0, 0
+        )
+        final_rational_filter *= self.q_neg_filter(
+            normalized_freq, 2, 0, 0
+        )
         return final_rational_filter
 
     def total_filter(self, freq):
