@@ -163,7 +163,7 @@ def find_probability_difference(threshold, array2d):
     tot = logsumexp(array2d)
     region = array2d[array2d > threshold]
     if region.size == 0:
-        prob = 0
+        prob = -100
     else:
         region_tot = logsumexp(region)
         prob = region_tot - tot
