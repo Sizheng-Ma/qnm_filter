@@ -25,7 +25,7 @@ import lal
 
 
 def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
-    """Parallel computation of a function that takes 2 arguments
+    """Parallel computation of the log_likelihood that takes 2 arguments
 
     Arguments
     ---------
@@ -42,15 +42,18 @@ def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
 
     Returns
     ---------
-    reshaped_results : ndarray
+    reshaped_log_likelihood : ndarray
         2d array of the results with shape (len(x_arr), len(y_arr))
+    log_evidence : float
+        log(Evidence), calculated by integrating over the likelihood
     """
     flatten_array = [(i, j) for i in M_arr for j in chi_arr]
-    results = Parallel(num_cpu)(
+    log_likelihood = Parallel(num_cpu)(
         delayed(self.likelihood_vs_mass_spin)(i, j, **kwargs) for i, j in flatten_array
     )
-    reshaped_results = np.reshape(results, (len(M_arr), len(chi_arr))).T
-    return reshaped_results, logsumexp(reshaped_results)
+    reshaped_log_likelihood = np.reshape(log_likelihood, (len(M_arr), len(chi_arr))).T
+    log_evidence = logsumexp(reshaped_log_likelihood) - np.log(np.size(reshaped_log_likelihood))
+    return reshaped_log_likelihood, log_evidence
 
 
 def evidence_parallel(
