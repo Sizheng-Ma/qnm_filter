@@ -173,7 +173,26 @@ def find_probability_difference(threshold, array2d):
 def find_credible_region(loglikelihood_grid, target_probability=0.9):
     """
     Calculate the log-likelihood value which contains (100*level)% of the
-    total likelihood volume, interpolating between grid points.
+    total likelihood volume, interpolating between grid points. Credit for 
+    improvements in this function go to Eliot Finch.
+
+    Parameters
+    ----------
+    loglikelihood_grid : ndarray
+        2D array of sampling log likelihood as a function of mass and spin
+    target_probability : float, optional
+        desired probability, by default 0.9
+
+    Returns
+    -------
+    result : float
+        the log likelihood value which encloses the (100*level)% of the
+        total likelihood volume
+
+    Raises
+    ------
+    ValueError
+        when the target log likelihood cannot be found.
     """
     sorted_likelihood = np.sort(loglikelihood_grid.flatten())
 
@@ -182,21 +201,11 @@ def find_credible_region(loglikelihood_grid, target_probability=0.9):
     sorted_likelihood_sum = np.logaddexp.accumulate(sorted_likelihood)
     sorted_likelihood_sum -= sorted_likelihood_sum[-1]
 
-    # Find the likelihoods that are below and above the desired level, which
-    # we will interpolate between
-    mask_below = sorted_likelihood_sum < np.log(1-target_probability)
-    mask_above = sorted_likelihood_sum > np.log(1-target_probability)
-
-    likelihood_below = sorted_likelihood[mask_below][-1]
-    likelihood_above = sorted_likelihood[mask_above][0]
-
-    likelihood_sum_below = sorted_likelihood_sum[mask_below][-1]
-    likelihood_sum_above = sorted_likelihood_sum[mask_above][0]
-
-    # Interpolate
+    # Interpolate based on 10 points around the desired level
+    idx = np.searchsorted(sorted_likelihood_sum, np.log(1-target_probability))
     interp = interp1d(
-        [likelihood_sum_below, likelihood_sum_above],
-        [likelihood_below, likelihood_above]
+        sorted_likelihood_sum[idx-5:idx+5],
+        sorted_likelihood[idx-5:idx+5]
     )
 
     return interp(np.log(1-target_probability))
