@@ -250,8 +250,8 @@ class Network(object):
             truncation = self.truncate_data(self.filtered_data)
 
         for ifo, data in truncation.items():
-            wd = sl.cho_solve((self.cholesky_L[ifo], True), data)
-            likelihood -= 0.5 * np.dot(data, wd)
+            y = sl.solve_triangular(self.cholesky_L[ifo], data, lower=True)
+            likelihood -= 0.5 * np.dot(y, y)
         return likelihood
 
     def add_filter(self, **kwargs):
