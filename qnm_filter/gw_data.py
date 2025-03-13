@@ -1,6 +1,6 @@
 """Utilities to manipulate GW data and rational filters.
 """
-__all__ = ["RealData", "ComplexData", "Filter", "Noise"]
+__all__ = ["RealData", "ComplexData", "Filter", "cached_Filter", "Noise"]
 
 from .utility import pad_data_for_fft
 import astropy.constants as c
@@ -202,6 +202,198 @@ class Filter:
             )
         return final_rational_filter
 
+class cached_Filter:
+    """Container for rational filters.
+
+    Attributes
+    ----------
+    chi : float
+        remnant dimensionless spin.
+    mass : float
+        remnant mass, in solar mass.
+    model_list : a list of dictionaries
+        quasinormal modes to be filtered.
+    """
+
+    def __init__(self, chi=None, mass=None, model_list=None, cached_omega=None):
+        """Constructor"""
+        self.chi = chi
+        self.mass = mass  # in solar mass
+
+        self.model_list = []
+        if model_list != None:
+            for l, m, n, p in model_list:
+                self.model_list.append(dict(l=l, m=m, n=n, p=p))
+        self.cached_omega = cached_omega
+
+    @property
+    def get_freq_list(self) -> list:
+        """Return a list of QNM frequencies stored in :attr:`Filter.model_list`."""
+        freq_list = {}
+        for mode in self.model_list:
+            this_l = mode["l"]
+            this_m = mode["m"]
+            this_n = mode["n"]
+            this_p = mode["p"]
+            omega = qnm.modes_cache(s=-2, l=this_l, m=this_m, n=this_n)(a=self.chi)[0]
+            if this_p == "p":
+                freq_list[str(this_l) + str(this_m) + str(this_n)] = omega
+            elif this_p == "r":
+                freq_list[str(this_l) + str(this_m) + str(this_n)] = -np.conj(omega)
+        return freq_list
+
+    @property
+    def get_spin(self) -> float:
+        """Return :attr:`Filter.chi`."""
+        return self.chi
+
+    @property
+    def get_mass(self) -> float:
+        """Return :attr:`Filter.mass`."""
+        return self.mass
+
+    @property
+    def get_model_list(self) -> list[dict]:
+        """Return :attr:`Filter.model_list`."""
+        return self.model_list
+
+    @staticmethod
+    def mass_unit(mass) -> float:
+        """Convert mass unit from solar mass to second."""
+        return mass * T_MSUN
+
+    def pos_filter(self, normalized_freq, omega):
+        r"""The positive rational filter:
+
+        .. math::
+            \frac{\omega-\omega_{lmn}}{\omega-\omega_{lmn}^*}
+
+        Parameters
+        ----------
+        normalized_freq : array
+            in remnant mass, frequencies that rational filters are evaluated at.
+        l : int
+            angular index
+        m : int
+            angular index
+        n : int
+            overtone index
+
+        Returns
+        -------
+        array
+        """
+        # omega = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
+        # print("Omega = " + str(omega))
+        # print("Normalised freq = " + str(normalized_freq))
+        # print("Filter = " + str((normalized_freq - omega) / (normalized_freq - np.conj(omega))))
+        return (normalized_freq - omega) / (normalized_freq - np.conj(omega))
+
+    def neg_filter(self, normalized_freq, omega):
+        r"""The negative rational filter:
+
+        .. math::
+            \frac{\omega+\omega_{lmn}^*}{\omega+\omega_{lmn}}
+
+        Parameters
+        ----------
+        normalized_freq : array
+            in remnant mass, frequencies that rational filters are evaluated at.
+        l : int
+            angular index
+        m : int
+            angular index
+        n : int
+            overtone index
+
+        Returns
+        -------
+        array
+        """
+        # omega = qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=self.chi)[0]
+        return (normalized_freq + np.conj(omega)) / (normalized_freq + omega)
+
+    def single_filter(self, normalized_freq, l, m, n):
+        r"""A combination of the negative and postive rational filters
+
+        .. math::
+            \frac{\omega-\omega_{lmn}}{\omega-\omega_{lmn}^*}\frac{\omega+\omega_{lmn}^*}{\omega+\omega_{lmn}}
+
+        Parameters
+        ----------
+        normalized_freq : array
+            in remnant mass, frequencies that rational filters are evaluated at.
+        l : int
+            angular index
+        m : int
+            angular index
+        n : int
+            overtone index
+
+        Returns
+        -------
+        array
+        """
+        omega = self.cached_omega[(l, m, n, 'p')][self.chi]
+        return self.neg_filter(normalized_freq, omega) * self.pos_filter(
+            normalized_freq, omega
+        )
+
+    def NR_filter(self, freq):
+        """Rational filters for numerical-relativity waveforms, removing the modes stored in :attr:`Filter.model_list`.
+
+        Parameters
+        ----------
+        freq : array
+            the unit should be the same as :attr:`Filter.mass`
+
+        Raises
+        ------
+        ValueError
+            When :attr:`Filter.mass` or :attr:`Filter.chi` is not provided
+        """
+        final_rational_filter = 1
+        if not bool(self.model_list):
+            return final_rational_filter
+        else:
+            if (self.mass is None) or (self.chi is None):
+                raise ValueError(
+                    f"Mass = {self.mass}" f" and Spin = {self.chi} are needed"
+                )
+        normalized_freq = freq * self.mass
+        for mode in self.model_list:
+            if mode["p"] == "p":
+                final_rational_filter *= self.pos_filter(
+                    normalized_freq, mode["l"], mode["m"], mode["n"]
+                )
+            elif mode["p"] == "r":
+                final_rational_filter *= self.neg_filter(
+                    normalized_freq, mode["l"], mode["m"], mode["n"]
+                )
+        return final_rational_filter
+
+    def total_filter(self, freq):
+        """The total rational filter that removes the modes stored in :attr:`Filter.model_list`.
+
+        Parameters
+        ----------
+        freq : array
+            in Hz, frequencies that the total filter is evaluated at.
+        """
+        final_rational_filter = 1
+        if not bool(self.model_list):
+            return final_rational_filter
+        else:
+            if (self.mass is None) or (self.chi is None):
+                raise ValueError(
+                    f"Mass = {self.mass}" f" and Spin = {self.chi} are needed"
+                )
+        normalized_freq = freq * self.mass * T_MSUN
+        for mode in self.model_list:
+            final_rational_filter *= self.single_filter(
+                -normalized_freq, mode["l"], mode["m"], mode["n"] 
+            )
+        return final_rational_filter
 
 class DataBase(pd.Series):
     """A Base container for time-domain gravitational data
