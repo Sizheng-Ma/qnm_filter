@@ -18,14 +18,20 @@ if __name__ == "__main__":
         author="Sizheng Ma, Neil Lu",
         author_email="sma@caltech.edu, Neil.Lu@anu.edu.au",
         packages=find_packages(),
+        python_requires='>=3.9,<3.12', #lalsuite compatibility
         install_requires=[
             "h5py",
-            "numpy",
+            "numpy<2.0", #qnm compatibility
+            "scipy<1.15.0",
+            "astropy<6.0.0",
             "qnm",
             "lalsuite",
+            "pandas",
             "matplotlib",
             "joblib",
             "bilby",
             "sxs",
-        ],  # TODO: change the order
+            "joblib",
+            "lalsuite",
+        ],
     )
