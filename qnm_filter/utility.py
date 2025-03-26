@@ -2,6 +2,7 @@
 """
 __all__ = [
     "parallel_compute",
+    "parallel_compute_cached_omega",
     "find_credible_region",
     "project_to_1d",
     "pad_data_for_fft",
@@ -22,6 +23,7 @@ from scipy.interpolate import interp1d
 import warnings
 import pickle
 import lal
+import qnm
 
 
 def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
@@ -52,6 +54,40 @@ def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
     reshaped_results = np.reshape(results, (len(M_arr), len(chi_arr))).T
     return reshaped_results, logsumexp(reshaped_results)
 
+def parallel_compute_cached_omega(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
+    """Parallel computation of a function that takes 2 arguments
+
+    Arguments
+    ---------
+    self : Network class instance
+        An instance of a Network class that will have self.likelihood_vs_mass_spin computed.
+    M_arr : array-like
+        array of the values of remnant mass to calculate the likelihood function for.
+    chi_arr : array-like
+        array of the values of remnant spin to calculate the likelihood function for.
+    num_cpu : int
+        integer to be based to Parallel as n_jobs. NOTE: passing a positive integer leads to better performance than -1 but performance differs across machines.
+    kwargs : dict
+        dictionary of kwargs of the function
+
+    Returns
+    ---------
+    reshaped_results : ndarray
+        2d array of the results with shape (len(x_arr), len(y_arr))
+    """
+    flatten_array = [(i, j) for i in M_arr for j in chi_arr]
+    mode_omega_dict = {mode : {} for mode in kwargs["model_list"]}
+    for mode in kwargs["model_list"]: #ONLY works for prograde modes
+        l, m, n, p = mode
+        mode_omega_dict[mode] = {chi: qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=chi)[0] for chi in chi_arr}
+    fft_freq_dict = {ifo: data.fft_freq for ifo, data in self.original_data.items()}
+    fft_data_dict = {ifo: data.fft_data for ifo, data in self.original_data.items()}
+    results = Parallel(num_cpu)(
+        delayed(self.cached_likelihood_vs_mass_spin)(i, j, cached_omega=mode_omega_dict, 
+            fft_freq_dict = fft_freq_dict, fft_data_dict = fft_data_dict, **kwargs) for i, j in flatten_array
+    )
+    reshaped_results = np.reshape(results, (len(M_arr), len(chi_arr))).T
+    return reshaped_results, logsumexp(reshaped_results)
 
 def evidence_parallel(
     self,

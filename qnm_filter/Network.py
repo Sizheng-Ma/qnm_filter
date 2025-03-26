@@ -284,6 +284,38 @@ class Network(object):
         self.add_filter(mass=M_est, chi=chi_est, model_list=model_list)
         return self.compute_likelihood(apply_filter=True)
 
+    def cached_add_filter(self, fft_freq_dict=None, fft_data_dict = None, **kwargs):
+        """Apply rational filters to :attr:`Network.original_data` and store
+        the filtered data in :attr:`Network.filtered_data`."""
+        for ifo, data in self.original_data.items():
+            data_in_freq = fft_data_dict[ifo] #data.fft_data
+            freq = fft_freq_dict[ifo] #data.fft_freq
+            filter_in_freq = cached_Filter(**kwargs).total_filter(freq)
+            ifft = np.fft.irfft(
+                filter_in_freq * data_in_freq, norm="ortho", n=len(data)
+            )
+            self.filtered_data[ifo] = RealData(ifft, index=data.index, ifo=ifo)
+
+    def cached_likelihood_vs_mass_spin(self, M_est, chi_est, cached_omega, fft_freq_dict, fft_data_dict, **kwargs) -> float:
+        """Compute likelihood for the given mass and spin.
+
+        Parameters
+        ----------
+        M_est : float
+            in solar mass, mass of rational filters
+        chi_est : float
+            dimensionless spin of rational filters
+
+        Returns
+        -------
+        The corresponding likelihood.
+        """
+        model_list = kwargs.pop("model_list")
+        self.cached_add_filter(mass=M_est, chi=chi_est, model_list=model_list, 
+            cached_omega=cached_omega, fft_freq_dict = fft_freq_dict, fft_data_dict = fft_data_dict)
+        return self.compute_likelihood(apply_filter=True)
+
+
     def compute_SNR(self, data, template, ifo, optimal) -> float:
         """Compute matched-filter/optimal SNR.
 
