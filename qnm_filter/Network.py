@@ -254,11 +254,11 @@ class Network(object):
             likelihood -= 0.5 * np.dot(y, y)
         return likelihood
 
-    def add_filter(self, **kwargs):
+    def add_filter(self, window='Tukey', alpha=0.2, **kwargs):
         """Apply rational filters to :attr:`Network.original_data` and store
         the filtered data in :attr:`Network.filtered_data`."""
         for ifo, data in self.original_data.items():
-            data_in_freq = data.fft_data
+            data_in_freq = data.fft_data(window=window, alpha=alpha)
             freq = data.fft_freq
             filter_in_freq = Filter(**kwargs).total_filter(freq)
             ifft = np.fft.irfft(
@@ -281,7 +281,9 @@ class Network(object):
         The corresponding likelihood.
         """
         model_list = kwargs.pop("model_list")
-        self.add_filter(mass=M_est, chi=chi_est, model_list=model_list)
+        window = kwargs.get("window", 'Tukey')
+        alpha = kwargs.get("alpha", 0.2)
+        self.add_filter(mass=M_est, chi=chi_est, model_list=model_list, window=window, alpha=alpha)
         return self.compute_likelihood(apply_filter=True)
 
     def cached_add_filter(self, fft_freq_dict=None, fft_data_dict = None, **kwargs):

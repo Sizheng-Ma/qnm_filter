@@ -54,7 +54,7 @@ def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
     reshaped_results = np.reshape(results, (len(M_arr), len(chi_arr))).T
     return reshaped_results, logsumexp(reshaped_results)
 
-def parallel_compute_cached_omega(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
+def parallel_compute_cached_omega(self, M_arr, chi_arr, num_cpu=-1, window='Tukey', alpha=0.2, **kwargs):
     """Parallel computation of a function that takes 2 arguments
 
     Arguments
@@ -81,7 +81,7 @@ def parallel_compute_cached_omega(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
         l, m, n, p = mode
         mode_omega_dict[mode] = {chi: qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=chi)[0] for chi in chi_arr}
     fft_freq_dict = {ifo: data.fft_freq for ifo, data in self.original_data.items()}
-    fft_data_dict = {ifo: data.fft_data for ifo, data in self.original_data.items()}
+    fft_data_dict = {ifo: data.fft_data(window=window, alpha=alpha) for ifo, data in self.original_data.items()}
     results = Parallel(num_cpu)(
         delayed(self.cached_likelihood_vs_mass_spin)(i, j, cached_omega=mode_omega_dict, 
             fft_freq_dict = fft_freq_dict, fft_data_dict = fft_data_dict, **kwargs) for i, j in flatten_array
