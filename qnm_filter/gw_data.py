@@ -10,6 +10,7 @@ import numpy as np
 import scipy.signal as ss
 import copy
 import bilby
+from scipy.interpolate import interp1d
 
 T_MSUN = c.M_sun.value * c.G.value / c.c.value**3
 
@@ -685,7 +686,7 @@ class Noise:
             time = kwargs.pop("time")
             self.signal = RealData(kwargs.get("signal"), index=time, ifo=ifo)
 
-    def load_noise_curve(self, attr_name, filename, ifo=None):
+    def load_noise_curve(self, attr_name, filename, ifo=None, df=0.5, f_low=None, f_high=None):
         """Read a txt/dat file and store the data in target attribute
         :attr:`attr_name`. The file should have two columns.
 
@@ -697,12 +698,29 @@ class Noise:
             the file name to be read.
         ifo : string, optional
             name of interferometer, by default None
+        df : float
+            frequency spacing of interpolated noise curve
         """
-        filereader = np.loadtxt(filename)
-        setattr(
-            self, attr_name, RealData(filereader[:, 1], index=filereader[:, 0], ifo=ifo)
-        )
 
+        filereader = np.loadtxt(filename)
+        equal_spacing = len(set(np.diff(filereader[:, 0]))) == 1 # check if the index spacing is equal
+        if equal_spacing:
+            interp_freqs = filereader[:, 0]
+            interp_data = filereader[:, 1]
+        else:
+            print("The loaded file did not have uniform frequency spacing. It has been interpolated.")
+            if f_low is None: f_low = 0
+            if f_high is None: f_high = filereader[-1,0]
+            interp = interp1d(filereader[:, 0], filereader[:, 1], bounds_error = False, fill_value = 1e-20)
+            interp_freqs = np.arange(
+                f_low, f_high+1e-5, df)
+            interp_data = interp(interp_freqs)
+        
+        self.ifo = ifo
+        setattr(
+            self, attr_name, RealData(interp_data, index=interp_freqs, ifo=ifo)
+        )
+        
     def __psd_to_acf(self, psd):
         """Inverse FFT PSD to ACF
 
