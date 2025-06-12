@@ -106,7 +106,7 @@ class SXSWaveforms:
                 raise ValueError("Invalid delta_t: {}".format(delta_t))
 
             ts = np.arange(t_interp_i, t_interp_f, delta_t)
-            interplated_waveform = waveform_lm.interpolate(ts).data
+            interplated_waveform = np.array(waveform_lm.interpolate(ts))
             self.original_data[str(l) + str(m)] = ComplexData(
                 interplated_waveform, index=ts - tp
             )
@@ -117,7 +117,7 @@ class SXSWaveforms:
             index_f = waveform_lm.index_closest_to(t_interp_f)
             waveform_lm_trunc = waveform_lm[index_i:index_f]
             self.original_data[str(l) + str(m)] = ComplexData(
-                waveform_lm_trunc.data, index=waveform_lm_trunc.t - tp
+                np.array(waveform_lm_trunc), index=waveform_lm_trunc.t - tp
             )
 
     def get_remnant_data(self, download=False) -> None:
