@@ -9,7 +9,9 @@ Install this Python package in "editable mode":
 ```shell
 git clone git@github.com:Sizheng-Ma/qnm_filter.git
 cd qnm_filter
-pip install -e path/to/this/repository
+conda create --name qnm_filter python=3.11
+conda activate qnm_filter
+pip install -e .
 ```
 
 ## Examples
