@@ -33,5 +33,6 @@ if __name__ == "__main__":
             "sxs<2025.0.17",
             "joblib",
             "lalsuite",
+            "seaborn",
         ],
     )
