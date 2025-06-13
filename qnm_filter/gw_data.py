@@ -574,6 +574,10 @@ class RealData(DataBase):
             len(self.values), alpha=alpha) * self.values
         return windowed_signal
 
+    def truncate(self, t_init, n_trunc):
+        init_index = np.argmin(abs(self.time - t_init))
+        return self.iloc[init_index : init_index + n_trunc].values
+
     def condition(
         self,
         t0=None,
