@@ -85,10 +85,10 @@ class SXSWaveforms:
             when the time interpolator cannot find `delta_t`
         """
         waveform = sxs.load(
-            self.filename + "/Lev/rhOverM",
+            self.filename,
             extrapolation_order=extrapolation_order,
             download=download,
-        )
+        ).Strain
         tp = waveform.max_norm_time()
         waveform_lm = waveform[:, waveform.index(l, m)]
 
@@ -106,7 +106,7 @@ class SXSWaveforms:
                 raise ValueError("Invalid delta_t: {}".format(delta_t))
 
             ts = np.arange(t_interp_i, t_interp_f, delta_t)
-            interplated_waveform = waveform_lm.interpolate(ts).data
+            interplated_waveform = np.array(waveform_lm.interpolate(ts))
             self.original_data[str(l) + str(m)] = ComplexData(
                 interplated_waveform, index=ts - tp
             )
@@ -117,7 +117,7 @@ class SXSWaveforms:
             index_f = waveform_lm.index_closest_to(t_interp_f)
             waveform_lm_trunc = waveform_lm[index_i:index_f]
             self.original_data[str(l) + str(m)] = ComplexData(
-                waveform_lm_trunc.data, index=waveform_lm_trunc.t - tp
+                np.array(waveform_lm_trunc), index=waveform_lm_trunc.t - tp
             )
 
     def get_remnant_data(self, download=False) -> None:
@@ -129,38 +129,38 @@ class SXSWaveforms:
         download : bool, optional
             download meta data from SXS catalog if ture, by default False
         """
-        metadata = sxs.load(self.filename + "/Lev/metadata.json", download=download)
+        metadata = sxs.load(self.filename, download=download)
         if self.mf != None:
             warnings.warn("Overwriting mf: {}".format(self.mf))
         if self.chif != None:
             warnings.warn("Overwriting chif: {}".format(self.chif))
-        self.mf = metadata["remnant_mass"]
-        spinvec = metadata["remnant_dimensionless_spin"]
+        self.mf = metadata.load_metadata()["remnant_mass"]
+        spinvec = metadata.load_metadata()["remnant_dimensionless_spin"]
         self.chif_vec = spinvec
         self.chif = np.sqrt(np.sum(np.array(spinvec) ** 2))
 
     @property
     def get_bbh_spin1(self):
         """Get the spin vector of the first BH (at a reference time during inspiral)"""
-        metadata = sxs.load(self.filename + "/Lev/metadata.json")
+        metadata = sxs.load(self.filename).load_metadata()
         return metadata["reference_dimensionless_spin1"]
 
     @property
     def get_bbh_spin2(self):
         """Get the spin vector of the second BH (at a reference time during inspiral)"""
-        metadata = sxs.load(self.filename + "/Lev/metadata.json")
+        metadata = sxs.load(self.filename).load_metadata()
         return metadata["reference_dimensionless_spin2"]
 
     @property
     def get_bbh_m1(self):
         """Get the mass of the first BH (at a reference time during inspiral)"""
-        metadata = sxs.load(self.filename + "/Lev/metadata.json")
+        metadata = sxs.load(self.filename).load_metadata()
         return metadata["reference_mass1"]
 
     @property
     def get_bbh_m2(self):
         """Get the mass of the second BH (at a reference time during inspiral)"""
-        metadata = sxs.load(self.filename + "/Lev/metadata.json")
+        metadata = sxs.load(self.filename).load_metadata()
         return metadata["reference_mass2"]
 
     def pad_data(self, partition, len_pow) -> None:
