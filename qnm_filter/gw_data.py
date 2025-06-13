@@ -707,8 +707,13 @@ class Noise:
             name of interferometer, by default None
         """
         filereader = np.loadtxt(filename)
-        freq_target = np.arange(0, fhigh + delta_f, delta_f)
-        value_interp = interp1d(filereader[:, 0], filereader[:, 1])(freq_target)
+        freq_target = np.arange(flow, fhigh + delta_f, delta_f)
+        value_interp = interp1d(
+            filereader[:, 0],
+            filereader[:, 1],
+            bounds_error=False,
+            fill_value=(filereader[:, 1][0], filereader[:, 1][-1]),
+        )(freq_target)
         setattr(self, attr_name, RealData(value_interp, index=freq_target, ifo=ifo))
 
     def cholesky(self, n_trunc):
