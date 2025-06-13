@@ -10,6 +10,8 @@ import numpy as np
 import scipy.signal as ss
 import copy
 import bilby
+from scipy.interpolate import interp1d
+import scipy.linalg as sl
 
 T_MSUN = c.M_sun.value * c.G.value / c.c.value**3
 
@@ -685,7 +687,9 @@ class Noise:
             time = kwargs.pop("time")
             self.signal = RealData(kwargs.get("signal"), index=time, ifo=ifo)
 
-    def load_noise_curve(self, attr_name, filename, ifo=None):
+    def load_noise_curve(
+        self, attr_name, filename, fhigh, delta_f=0.1, flow=0, ifo=None
+    ):
         """Read a txt/dat file and store the data in target attribute
         :attr:`attr_name`. The file should have two columns.
 
@@ -699,9 +703,12 @@ class Noise:
             name of interferometer, by default None
         """
         filereader = np.loadtxt(filename)
-        setattr(
-            self, attr_name, RealData(filereader[:, 1], index=filereader[:, 0], ifo=ifo)
-        )
+        freq_target = np.arange(0, fhigh + delta_f, delta_f)
+        value_interp = interp1d(filereader[:, 0], filereader[:, 1])(freq_target)
+        setattr(self, attr_name, RealData(value_interp, index=freq_target, ifo=ifo))
+
+    def cholesky(self, n_trunc):
+        return np.linalg.cholesky(sl.toeplitz(self.acf.iloc[:n_trunc].values))
 
     def __psd_to_acf(self, psd):
         """Inverse FFT PSD to ACF
