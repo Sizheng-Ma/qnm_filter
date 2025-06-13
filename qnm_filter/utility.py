@@ -13,6 +13,7 @@ __all__ = [
     "time_shift_from_sky",
     "posterior_quantile_2d",
     "compute_filter_time_shift",
+    "SNR",
 ]
 
 from joblib import Parallel, delayed
@@ -26,6 +27,7 @@ import pickle
 import lal
 import qnm
 import astropy.constants as c
+import scipy.linalg as sl
 
 
 def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
@@ -461,3 +463,9 @@ def compute_filter_time_shift(chi, input_model_list, double_shift, mass=None):
         T_MSUN = c.M_sun.value * c.G.value / c.c.value**3
         time *= mass * T_MSUN
     return time
+
+
+def SNR(cholesky, signal):
+    template_w = sl.cho_solve((cholesky, True), signal)
+    snr_opt = np.sqrt(np.dot(signal, template_w))
+    return snr_opt
