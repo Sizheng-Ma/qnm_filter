@@ -5,11 +5,55 @@ __all__ = [
     "set_bilby_ifo",
     "set_bilby_predefined_ifo",
     "bilby_injection",
+    "bilby_construct_noise_from_file",
 ]
 
 from .gw_data import *
 import copy
 import bilby
+import numpy as np
+from scipy.interpolate import interp1d
+
+
+def bilby_construct_noise_from_file(
+    filename, duration, sampling_frequency, fhigh, delta_f=0.1, flow=0
+):
+    filereader = np.loadtxt(filename)
+    freq_target = np.arange(flow, fhigh + delta_f, delta_f)
+    value_interp = interp1d(
+        filereader[:, 0],
+        filereader[:, 1],
+        bounds_error=False,
+        fill_value=(filereader[:, 1][0], filereader[:, 1][-1]),
+    )(freq_target)
+    bilby_psd = bilby.gw.detector.PowerSpectralDensity(
+        frequency_array=freq_target, psd_array=value_interp**2
+    )
+    ifo = bilby.gw.detector.Interferometer(
+        name=None,
+        length=0,
+        latitude=0,
+        longitude=0,
+        elevation=0,
+        xarm_azimuth=0,
+        yarm_azimuth=90,
+        power_spectral_density=bilby_psd,
+        minimum_frequency=flow,
+        maximum_frequency=fhigh,
+    )
+    ifo.set_strain_data_from_power_spectral_density(
+        sampling_frequency=sampling_frequency,
+        duration=duration,
+        start_time=-duration / 2,
+    )
+
+    noise_class = Noise(
+        signal=ifo.strain_data.time_domain_strain,
+        time=ifo.strain_data.time_array,
+    )
+    noise_class.welch()
+    noise_class.from_psd()
+    return noise_class
 
 
 def bilby_get_strain(ifo, time_offset):
