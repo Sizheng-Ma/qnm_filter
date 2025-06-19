@@ -11,23 +11,17 @@ __all__ = [
 from .gw_data import *
 import copy
 import bilby
-import numpy as np
-from scipy.interpolate import interp1d
-
 
 def bilby_construct_noise_from_file(
     filename, duration, sampling_frequency, fhigh, delta_f=0.1, flow=0
 ):
-    filereader = np.loadtxt(filename)
-    freq_target = np.arange(flow, fhigh + delta_f, delta_f)
-    value_interp = interp1d(
-        filereader[:, 0],
-        filereader[:, 1],
-        bounds_error=False,
-        fill_value=(filereader[:, 1][0], filereader[:, 1][-1]),
-    )(freq_target)
+    read_noise = Noise()
+    read_noise.load_noise_curve(
+        "asd", filename=filename, fhigh=fhigh, delta_f=delta_f, flow=flow
+    )
+    read_noise.from_asd()
     bilby_psd = bilby.gw.detector.PowerSpectralDensity(
-        frequency_array=freq_target, psd_array=value_interp**2
+        frequency_array=read_noise.psd.index, psd_array=read_noise.psd.values
     )
     ifo = bilby.gw.detector.Interferometer(
         name=None,
@@ -53,8 +47,7 @@ def bilby_construct_noise_from_file(
     )
     noise_class.welch()
     noise_class.from_psd()
-    return noise_class
-
+    return noise_class, read_noise
 
 def bilby_get_strain(ifo, time_offset):
     """Get strain data from Bilby's `Interferometer` and store the result in `Data`.
