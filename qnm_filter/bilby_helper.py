@@ -12,8 +12,9 @@ from .gw_data import *
 import copy
 import bilby
 
+
 def bilby_construct_noise_from_file(
-    filename, duration, sampling_frequency, fhigh, delta_f=0.1, flow=0
+    filename, duration, sampling_frequency, fhigh, welch_sampling=1, delta_f=0.1, flow=0
 ):
     read_noise = Noise()
     read_noise.load_noise_curve(
@@ -45,9 +46,10 @@ def bilby_construct_noise_from_file(
         signal=ifo.strain_data.time_domain_strain,
         time=ifo.strain_data.time_array,
     )
-    noise_class.welch()
+    noise_class.welch(sampling_rate=welch_sampling)
     noise_class.from_psd()
     return noise_class, read_noise
+
 
 def bilby_get_strain(ifo, time_offset):
     """Get strain data from Bilby's `Interferometer` and store the result in `Data`.

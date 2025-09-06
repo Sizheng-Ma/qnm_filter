@@ -208,10 +208,12 @@ class Network(object):
         noisy_data = getattr(self, attr_name)
         if self.acfs:
             warnings.warn("Overwriting ACFs")
+        self.noise = {}
         for ifo, data in noisy_data.items():
             noise = Noise(time=data.time, signal=data.values)
             noise.welch(**kws)
             noise.from_psd()
+            self.noise[ifo] = noise
             self.acfs[ifo] = noise.acf
 
     def cholesky_decomposition(self) -> None:
@@ -316,7 +318,6 @@ class Network(object):
         self.cached_add_filter(mass=M_est, chi=chi_est, model_list=model_list, 
             cached_omega=cached_omega, fft_freq_dict = fft_freq_dict, fft_data_dict = fft_data_dict)
         return self.compute_likelihood(apply_filter=True)
-
 
     def compute_SNR(self, data, template, ifo, optimal) -> float:
         """Compute matched-filter/optimal SNR.
