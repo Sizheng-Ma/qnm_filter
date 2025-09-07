@@ -159,6 +159,25 @@ class FilterBase:
         return final_rational_filter
 
 
+class Filterftau(FilterBase):
+    def single_filter(self, normalized_freq, f, tau):
+        omega = f - 1j / tau
+        return self.neg_filter(normalized_freq, omega) * self.pos_filter(
+            normalized_freq, omega
+        )
+
+    def total_filter(self, freq, f, tau):
+        """The total rational filter that removes the modes stored in :attr:`Filter.model_list`.
+
+        Parameters
+        ----------
+        freq : array
+            in Hz, frequencies that the total filter is evaluated at.
+        """
+        final_rational_filter = self.single_filter(-freq, f, tau)
+        return final_rational_filter
+
+
 class Filter(FilterBase):
     """Container for rational filters.
 
