@@ -12,6 +12,7 @@ __all__ = [
     "time_to_index",
     "time_shift_from_sky",
     "posterior_quantile_2d",
+    "compute_filter_time_shift",
 ]
 
 from joblib import Parallel, delayed
@@ -407,3 +408,35 @@ def time_shift_from_sky(ifo, ra, dec, t_init):
     location = lal.cached_detector_by_prefix[ifo].location
     dt_ifo = lal.TimeDelayFromEarthCenter(location, ra, dec, tgps)
     return dt_ifo
+
+
+def compute_filter_time_shift(chi, input_model_list, double_shift):
+    """Compute the time shift induced by a list of filters, see Eq. (16) of
+    https://arxiv.org/abs/2207.10870.
+
+    Parameters
+    ----------
+    chi : double
+        black hole spin
+    input_model_list : list
+        list of filters
+    double_shift : bool
+        if true, double the time shift due to mirror modes
+    """
+    time = 0
+    model_list = []
+
+    for l, m, n, p in input_model_list:
+        model_list.append(dict(l=l, m=m, n=n, p=p))
+
+    for mode in model_list:
+        this_l = mode["l"]
+        this_m = mode["m"]
+        this_n = mode["n"]
+        omega = qnm.modes_cache(s=-2, l=this_l, m=this_m, n=this_n)(a=chi)[0]
+        time += -2 * np.imag(omega) / abs(omega) ** 2
+
+    if double_shift:
+        return 2 * time
+    else:
+        return time
