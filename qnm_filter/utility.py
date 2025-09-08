@@ -1,5 +1,5 @@
-"""Useful functions for calculating and plotting data
-"""
+"""Useful functions for calculating and plotting data"""
+
 __all__ = [
     "parallel_compute",
     "parallel_compute_cached_omega",
@@ -56,7 +56,10 @@ def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
     reshaped_results = np.reshape(results, (len(M_arr), len(chi_arr))).T
     return reshaped_results, logsumexp(reshaped_results)
 
-def parallel_compute_cached_omega(self, M_arr, chi_arr, num_cpu=-1, window='Tukey', alpha=0.2, **kwargs):
+
+def parallel_compute_cached_omega(
+    self, M_arr, chi_arr, num_cpu=-1, window="Tukey", alpha=0.2, **kwargs
+):
     """Parallel computation of a function that takes 2 arguments
 
     Arguments
@@ -78,18 +81,31 @@ def parallel_compute_cached_omega(self, M_arr, chi_arr, num_cpu=-1, window='Tuke
         2d array of the results with shape (len(x_arr), len(y_arr))
     """
     flatten_array = [(i, j) for i in M_arr for j in chi_arr]
-    mode_omega_dict = {mode : {} for mode in kwargs["model_list"]}
-    for mode in kwargs["model_list"]: #ONLY works for prograde modes
+    mode_omega_dict = {mode: {} for mode in kwargs["model_list"]}
+    for mode in kwargs["model_list"]:  # ONLY works for prograde modes
         l, m, n, p = mode
-        mode_omega_dict[mode] = {chi: qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=chi)[0] for chi in chi_arr}
+        mode_omega_dict[mode] = {
+            chi: qnm.modes_cache(s=-2, l=l, m=m, n=n)(a=chi)[0] for chi in chi_arr
+        }
     fft_freq_dict = {ifo: data.fft_freq for ifo, data in self.original_data.items()}
-    fft_data_dict = {ifo: data.fft_data(window=window, alpha=alpha) for ifo, data in self.original_data.items()}
+    fft_data_dict = {
+        ifo: data.fft_data(window=window, alpha=alpha)
+        for ifo, data in self.original_data.items()
+    }
     results = Parallel(num_cpu)(
-        delayed(self.cached_likelihood_vs_mass_spin)(i, j, cached_omega=mode_omega_dict, 
-            fft_freq_dict = fft_freq_dict, fft_data_dict = fft_data_dict, **kwargs) for i, j in flatten_array
+        delayed(self.cached_likelihood_vs_mass_spin)(
+            i,
+            j,
+            cached_omega=mode_omega_dict,
+            fft_freq_dict=fft_freq_dict,
+            fft_data_dict=fft_data_dict,
+            **kwargs,
+        )
+        for i, j in flatten_array
     )
     reshaped_results = np.reshape(results, (len(M_arr), len(chi_arr))).T
     return reshaped_results, logsumexp(reshaped_results)
+
 
 def evidence_parallel(
     self,
@@ -211,7 +227,7 @@ def find_probability_difference(threshold, array2d):
 def find_credible_region(loglikelihood_grid, target_probability=0.9):
     """
     Calculate the log-likelihood value which contains (100*level)% of the
-    total likelihood volume, interpolating between grid points. Credit for 
+    total likelihood volume, interpolating between grid points. Credit for
     improvements in this function go to Eliot Finch.
 
     Parameters
@@ -240,13 +256,12 @@ def find_credible_region(loglikelihood_grid, target_probability=0.9):
     sorted_likelihood_sum -= sorted_likelihood_sum[-1]
 
     # Interpolate based on 10 points around the desired level
-    idx = np.searchsorted(sorted_likelihood_sum, np.log(1-target_probability))
+    idx = np.searchsorted(sorted_likelihood_sum, np.log(1 - target_probability))
     interp = interp1d(
-        sorted_likelihood_sum[idx-5:idx+5],
-        sorted_likelihood[idx-5:idx+5]
+        sorted_likelihood_sum[idx - 5 : idx + 5], sorted_likelihood[idx - 5 : idx + 5]
     )
 
-    return interp(np.log(1-target_probability))
+    return interp(np.log(1 - target_probability))
 
 
 def posterior_quantile_2d(array2d, fit, mass, spin, model_list, num_cpu=-1):
