@@ -25,6 +25,7 @@ import warnings
 import pickle
 import lal
 import qnm
+import astropy.constants as c
 
 
 def parallel_compute(self, M_arr, chi_arr, num_cpu=-1, **kwargs):
@@ -410,7 +411,7 @@ def time_shift_from_sky(ifo, ra, dec, t_init):
     return dt_ifo
 
 
-def compute_filter_time_shift(chi, input_model_list, double_shift):
+def compute_filter_time_shift(chi, input_model_list, double_shift, mass=None):
     """Compute the time shift induced by a list of filters, see Eq. (16) of
     https://arxiv.org/abs/2207.10870.
 
@@ -422,6 +423,8 @@ def compute_filter_time_shift(chi, input_model_list, double_shift):
         list of filters
     double_shift : bool
         if true, double the time shift due to mirror modes
+    mass : double
+        in solar mass, if provided, convert the time to second
     """
     time = 0
     model_list = []
@@ -437,6 +440,9 @@ def compute_filter_time_shift(chi, input_model_list, double_shift):
         time += -2 * np.imag(omega) / abs(omega) ** 2
 
     if double_shift:
-        return 2 * time
-    else:
-        return time
+        time *= 2
+
+    if mass != None:
+        T_MSUN = c.M_sun.value * c.G.value / c.c.value**3
+        time *= mass * T_MSUN
+    return time
