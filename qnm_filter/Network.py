@@ -257,6 +257,28 @@ class Network(object):
             likelihood -= 0.5 * np.dot(y, y)
         return likelihood
 
+    def compute_likelihood_ftau(self) -> float:
+        """Compute likelihood for interferometer network.
+
+        Arguments
+        ---------
+        apply_filter : bool
+            option to apply rational filters (default True).
+
+        Returns
+        -------
+        likelihood : float
+            The likelihood of interferometer network
+        """
+        likelihood = 0
+
+        truncation = self.truncate_data(self.filtered_ftau_data)
+
+        for ifo, data in truncation.items():
+            y = sl.solve_triangular(self.cholesky_L[ifo], data, lower=True)
+            likelihood -= 0.5 * np.dot(y, y)
+        return likelihood
+
     def add_filter(self, window='Tukey', alpha=0.2, **kwargs):
         """Apply rational filters to :attr:`Network.original_data` and store
         the filtered data in :attr:`Network.filtered_data`."""
@@ -300,6 +322,23 @@ class Network(object):
         alpha = kwargs.get("alpha", 0.2)
         self.add_filter(mass=M_est, chi=chi_est, model_list=model_list, window=window, alpha=alpha)
         return self.compute_likelihood(apply_filter=True)
+
+    def likelihood_vs_f_tau(self, f, tau) -> float:
+        """Compute likelihood for the given mass and spin.
+
+        Parameters
+        ----------
+        M_est : float
+            in solar mass, mass of rational filters
+        chi_est : float
+            dimensionless spin of rational filters
+
+        Returns
+        -------
+        The corresponding likelihood.
+        """
+        self.add_ftau_filter(f=f, tau=tau)
+        return self.compute_likelihood_ftau()
 
     def cached_add_filter(self, fft_freq_dict=None, fft_data_dict = None, **kwargs):
         """Apply rational filters to :attr:`Network.original_data` and store
