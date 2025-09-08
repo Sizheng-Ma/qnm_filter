@@ -1,6 +1,6 @@
 """Utilities to manipulate GW data and rational filters."""
 
-__all__ = ["RealData", "ComplexData", "Filter", "cached_Filter", "Noise"]
+__all__ = ["RealData", "ComplexData", "Filter", "cached_Filter", "Filterftau", "Noise"]
 
 from .utility import pad_data_for_fft
 import astropy.constants as c
