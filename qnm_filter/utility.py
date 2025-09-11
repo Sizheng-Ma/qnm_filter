@@ -458,7 +458,7 @@ def time_shift_from_sky(ifo, ra, dec, t_init):
     return dt_ifo
 
 
-def compute_filter_time_shift(chi, input_model_list, double_shift, mass=None):
+def compute_filter_time_shift(chi, input_model_list, double_shift, mass=None, si=True):
     """Compute the time shift induced by a list of filters, see Eq. (16) of
     https://arxiv.org/abs/2207.10870.
 
@@ -490,8 +490,10 @@ def compute_filter_time_shift(chi, input_model_list, double_shift, mass=None):
         time *= 2
 
     if mass != None:
-        T_MSUN = c.M_sun.value * c.G.value / c.c.value**3
-        time *= mass * T_MSUN
+        time *= mass
+        if si:
+            T_MSUN = c.M_sun.value * c.G.value / c.c.value**3
+            time *= T_MSUN
     return time
 
 

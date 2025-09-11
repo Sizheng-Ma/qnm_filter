@@ -125,14 +125,13 @@ class FilterBase:
                 )
         normalized_freq = freq * self.mass
         for mode in self.model_list:
+            omega = qnm.modes_cache(s=-2, l=mode["l"], m=mode["m"], n=mode["n"])(
+                a=self.chi
+            )[0]
             if mode["p"] == "p":
-                final_rational_filter *= self.pos_filter(
-                    normalized_freq, mode["l"], mode["m"], mode["n"]
-                )
+                final_rational_filter *= self.pos_filter(normalized_freq, omega)
             elif mode["p"] == "r":
-                final_rational_filter *= self.neg_filter(
-                    normalized_freq, mode["l"], mode["m"], mode["n"]
-                )
+                final_rational_filter *= self.neg_filter(normalized_freq, omega)
         return final_rational_filter
 
     def total_filter(self, freq):
