@@ -102,7 +102,7 @@ class FilterBase:
         """
         return (normalized_freq + np.conj(omega)) / (normalized_freq + omega)
 
-    def NR_filter(self, freq):
+    def NR_filter(self, freq, quadratic1=False, quadratic2=False):
         """Rational filters for numerical-relativity waveforms, removing the modes stored in :attr:`Filter.model_list`.
 
         Parameters
@@ -132,6 +132,14 @@ class FilterBase:
                 final_rational_filter *= self.pos_filter(normalized_freq, omega)
             elif mode["p"] == "r":
                 final_rational_filter *= self.neg_filter(normalized_freq, omega)
+        omega220 = qnm.modes_cache(s=-2, l=2, m=2, n=0)(a=self.chi)[0]
+        omega221 = qnm.modes_cache(s=-2, l=2, m=2, n=1)(a=self.chi)[0]
+        if quadratic1:
+            final_rational_filter *= self.pos_filter(normalized_freq, 2 * omega220)
+        if quadratic2:
+            final_rational_filter *= self.pos_filter(
+                normalized_freq, omega221 + omega220
+            )
         return final_rational_filter
 
     def total_filter(self, freq):

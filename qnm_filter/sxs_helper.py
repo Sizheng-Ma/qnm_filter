@@ -228,7 +228,7 @@ class SXSWaveforms:
             "cross": RealData(hc, index=time, ifo=ifo),
         }
 
-    def add_filter(self, lm, model_list):
+    def add_filter(self, lm, model_list, quadratic1=False, quadratic2=False):
         r"""Apply rational filters listed in `model_list` to the :math:`lm` harmonic of the NR waveform.
 
         Parameters
@@ -248,7 +248,7 @@ class SXSWaveforms:
         freq = data.fft_freq
         filter_in_freq = Filter(
             chi=self.chif, mass=self.mf, model_list=model_list
-        ).NR_filter(freq)
+        ).NR_filter(freq, quadratic1, quadratic2)
         data_in_time = np.fft.fft(filter_in_freq * data_in_freq, norm="ortho")
         return ComplexData(data_in_time, index=data.time)
 
