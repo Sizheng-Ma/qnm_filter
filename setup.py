@@ -22,7 +22,7 @@ if __name__ == "__main__":
         install_requires=[
             "h5py",
             "numpy<2.0",  # qnm compatibility
-            "scipy<1.15.0",
+            "scipy<1.14.0",
             "astropy<6.0.0",
             "qnm",
             "lalsuite",
