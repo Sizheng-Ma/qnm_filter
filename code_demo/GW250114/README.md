@@ -33,7 +33,7 @@ pip install -e .
 - Internet connection required on first run to download GWOSC data and posterior file
 
 ### Tested environments
-- Python 3.11 on macOS 14
+- Python 3.11 on macOS 15.6.1
 - Python 3.10 on Ubuntu 22.04
 
 ---
