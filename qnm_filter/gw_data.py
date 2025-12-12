@@ -749,8 +749,8 @@ class Noise:
         """Estimate PSD from data using Welch's method."""
         fs = self.signal.fft_span
         nperseg = fs / kws.get("sampling_rate", 1)
-
-        freq, psd = ss.welch(self.signal, fs=fs, nperseg=nperseg)
+        
+        freq, psd = ss.welch(np.asarray(self.signal), fs=fs, nperseg=nperseg)
         self.psd = RealData(psd, index=freq, ifo=self.ifo)
 
     @property
