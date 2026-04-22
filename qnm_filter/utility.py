@@ -11,6 +11,7 @@ __all__ = [
     "load_class",
     "time_to_index",
     "time_shift_from_sky",
+    "pvalue_of_mass_spin",
     "posterior_quantile_2d",
     "compute_filter_time_shift",
 ]
@@ -264,8 +265,57 @@ def find_credible_region(loglikelihood_grid, target_probability=0.9):
     return interp(np.log(1 - target_probability))
 
 
-def posterior_quantile_2d(array2d, fit, mass, spin, model_list, num_cpu=-1):
+def pvalue_of_mass_spin(array2d, fit, mass, spin, model_list):
     """Compute the posterior quantile of the queried mass and spin
+
+    Parameters
+    ----------
+    array2d : ndarray
+        2D array of sampling log likelihood as a function of mass and spin
+    fit : Network
+        a Network object
+    mass : float
+        the queried mass
+    spin : float
+        the queried spin
+    model_list : a list of dictionaries
+        quasinormal modes to be filtered
+
+    Returns
+    -------
+    float
+        the computed posterior quantile
+    """
+    # Calculate likelihood for the given mass and spin
+    this_likelihood = fit.likelihood_vs_mass_spin(mass, spin, model_list=model_list)
+    
+    # Sort all likelihood values from the grid
+    sorted_likelihood = np.sort(array2d.flatten())
+    
+    # Compute the cumulative sum of sorted likelihoods in log space
+    cumulative_log_prob = np.logaddexp.accumulate(sorted_likelihood)
+    # Normalize so the total sum is 1
+    cumulative_log_prob -= cumulative_log_prob[-1]
+    
+    # Handle boundary cases
+    if this_likelihood <= sorted_likelihood[0]:
+        return 1.0
+    elif this_likelihood >= sorted_likelihood[-1]:
+        return 0.0
+
+    # Interpolate based on 10 points around the desired level
+    idx = np.searchsorted(sorted_likelihood, this_likelihood)
+    interp = interp1d(
+        sorted_likelihood[idx-5:idx+5],
+        cumulative_log_prob[idx-5:idx+5]
+    )
+    
+    # Convert from log probability to linear probability and return pvalue
+    return 1-np.exp(interp(this_likelihood))
+
+
+def posterior_quantile_2d(array2d, fit, mass, spin, model_list, num_cpu=-1):
+    """USE pvalue_of_mass_spin() FOR ALL NORMAL USES, IT IS MUCH FASTER
 
     Parameters
     ----------
