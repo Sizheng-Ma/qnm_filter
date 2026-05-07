@@ -1,6 +1,6 @@
 """Utilities to manipulate GW data and rational filters.
 """
-__all__ = ["RealData", "ComplexData", "Filter", "cached_Filter", "Noise"]
+__all__ = ["RealData", "ComplexData", "Filter", "cached_Filter", "Filterftau", "Noise"]
 
 from .utility import pad_data_for_fft
 import astropy.constants as c
@@ -394,6 +394,53 @@ class cached_Filter:
                 -normalized_freq, mode["l"], mode["m"], mode["n"] 
             )
         return final_rational_filter
+
+class Filterftau(FilterBase):
+    """Container for rational filters parameterized directly by a mode's
+    angular frequency ``f`` and damping time ``tau``. 
+
+    The complex QNM angular frequency is reconstructed as
+    :math:`\omega = f - i/\tau`.
+
+    Attributes
+    ----------
+    f : float
+        real part of the QNM angular frequency, in rad/s.
+    tau : float
+        damping time of the QNM, in seconds (so ``1/tau`` is in rad/s).
+    """
+
+    def single_filter(self, normalized_freq, f, tau):
+        r"""Rational filter for a single QNM specified by ``f`` and ``tau``.
+
+        Parameters
+        ----------
+        normalized_freq : array
+            angular frequencies (rad/s) at which the filter is evaluated.
+        f : float
+            real part of the QNM angular frequency, in rad/s.
+        tau : float
+            damping time of the QNM, in seconds.
+        """
+        omega = f - 1j / tau
+        return self.neg_filter(normalized_freq, omega) * self.pos_filter(normalized_freq, omega)
+
+    def total_filter(self, freq, f, tau):
+        """The total rational filter that removes a QNM with angular
+        frequency ``f`` and damping time ``tau``.
+
+        Parameters
+        ----------
+        freq : array
+            angular frequencies in rad/s, at which the total filter is evaluated.
+        f : float
+            real part of the QNM angular frequency, in rad/s.
+        tau : float
+            damping time of the QNM, in seconds.
+        """
+        final_rational_filter = self.single_filter(-freq, f, tau)
+        return final_rational_filter
+
 
 class DataBase(pd.Series):
     """A Base container for time-domain gravitational data
