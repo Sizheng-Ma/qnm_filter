@@ -1,5 +1,5 @@
-"""Utilities to manipulate GW data and rational filters.
-"""
+"""Utilities to manipulate GW data and rational filters."""
+
 __all__ = ["RealData", "ComplexData", "Filter", "cached_Filter", "Filterftau", "Noise"]
 
 from .utility import pad_data_for_fft
@@ -142,9 +142,7 @@ class Filter:
         -------
         array
         """
-        return self.neg_filter(normalized_freq, l, m, n) * self.pos_filter(
-            normalized_freq, l, m, n
-        )
+        return self.neg_filter(normalized_freq, l, m, n) * self.pos_filter(normalized_freq, l, m, n)
 
     def NR_filter(self, freq):
         """Rational filters for numerical-relativity waveforms, removing the modes stored in :attr:`Filter.model_list`.
@@ -164,19 +162,13 @@ class Filter:
             return final_rational_filter
         else:
             if (self.mass is None) or (self.chi is None):
-                raise ValueError(
-                    f"Mass = {self.mass}" f" and Spin = {self.chi} are needed"
-                )
+                raise ValueError(f"Mass = {self.mass} and Spin = {self.chi} are needed")
         normalized_freq = freq * self.mass
         for mode in self.model_list:
             if mode["p"] == "p":
-                final_rational_filter *= self.pos_filter(
-                    normalized_freq, mode["l"], mode["m"], mode["n"]
-                )
+                final_rational_filter *= self.pos_filter(normalized_freq, mode["l"], mode["m"], mode["n"])
             elif mode["p"] == "r":
-                final_rational_filter *= self.neg_filter(
-                    normalized_freq, mode["l"], mode["m"], mode["n"]
-                )
+                final_rational_filter *= self.neg_filter(normalized_freq, mode["l"], mode["m"], mode["n"])
         return final_rational_filter
 
     def total_filter(self, freq):
@@ -192,15 +184,12 @@ class Filter:
             return final_rational_filter
         else:
             if (self.mass is None) or (self.chi is None):
-                raise ValueError(
-                    f"Mass = {self.mass}" f" and Spin = {self.chi} are needed"
-                )
+                raise ValueError(f"Mass = {self.mass} and Spin = {self.chi} are needed")
         normalized_freq = freq * self.mass * T_MSUN
         for mode in self.model_list:
-            final_rational_filter *= self.single_filter(
-                -normalized_freq, mode["l"], mode["m"], mode["n"]
-            )
+            final_rational_filter *= self.single_filter(-normalized_freq, mode["l"], mode["m"], mode["n"])
         return final_rational_filter
+
 
 class cached_Filter:
     """Container for rational filters.
@@ -334,10 +323,8 @@ class cached_Filter:
         -------
         array
         """
-        omega = self.cached_omega[(l, m, n, 'p')][self.chi]
-        return self.neg_filter(normalized_freq, omega) * self.pos_filter(
-            normalized_freq, omega
-        )
+        omega = self.cached_omega[(l, m, n, "p")][self.chi]
+        return self.neg_filter(normalized_freq, omega) * self.pos_filter(normalized_freq, omega)
 
     def NR_filter(self, freq):
         """Rational filters for numerical-relativity waveforms, removing the modes stored in :attr:`Filter.model_list`.
@@ -357,19 +344,13 @@ class cached_Filter:
             return final_rational_filter
         else:
             if (self.mass is None) or (self.chi is None):
-                raise ValueError(
-                    f"Mass = {self.mass}" f" and Spin = {self.chi} are needed"
-                )
+                raise ValueError(f"Mass = {self.mass} and Spin = {self.chi} are needed")
         normalized_freq = freq * self.mass
         for mode in self.model_list:
             if mode["p"] == "p":
-                final_rational_filter *= self.pos_filter(
-                    normalized_freq, mode["l"], mode["m"], mode["n"]
-                )
+                final_rational_filter *= self.pos_filter(normalized_freq, mode["l"], mode["m"], mode["n"])
             elif mode["p"] == "r":
-                final_rational_filter *= self.neg_filter(
-                    normalized_freq, mode["l"], mode["m"], mode["n"]
-                )
+                final_rational_filter *= self.neg_filter(normalized_freq, mode["l"], mode["m"], mode["n"])
         return final_rational_filter
 
     def total_filter(self, freq):
@@ -385,19 +366,16 @@ class cached_Filter:
             return final_rational_filter
         else:
             if (self.mass is None) or (self.chi is None):
-                raise ValueError(
-                    f"Mass = {self.mass}" f" and Spin = {self.chi} are needed"
-                )
+                raise ValueError(f"Mass = {self.mass} and Spin = {self.chi} are needed")
         normalized_freq = freq * self.mass * T_MSUN
         for mode in self.model_list:
-            final_rational_filter *= self.single_filter(
-                -normalized_freq, mode["l"], mode["m"], mode["n"] 
-            )
+            final_rational_filter *= self.single_filter(-normalized_freq, mode["l"], mode["m"], mode["n"])
         return final_rational_filter
+
 
 class Filterftau(FilterBase):
     """Container for rational filters parameterized directly by a mode's
-    angular frequency ``f`` and damping time ``tau``. 
+    angular frequency ``f`` and damping time ``tau``.
 
     The complex QNM angular frequency is reconstructed as
     :math:`\omega = f - i/\tau`.
@@ -472,9 +450,7 @@ class DataBase(pd.Series):
     def __add__(self, other):
         if all(self.index.values != other.index.values):
             raise ValueError("Two arrays don't have the same time")
-        return DataBase(
-            self.values + other.values, index=self.index.values, ifo=self.ifo
-        )
+        return DataBase(self.values + other.values, index=self.index.values, ifo=self.ifo)
 
     @property
     def time(self):
@@ -504,9 +480,7 @@ class ComplexData(DataBase):
     def __add__(self, other):
         if all(self.index.values != other.index.values):
             raise ValueError("Two arrays don't have the same time")
-        return ComplexData(
-            self.values + other.values, index=self.index.values, ifo=self.ifo
-        )
+        return ComplexData(self.values + other.values, index=self.index.values, ifo=self.ifo)
 
     def pad_complex_data_for_fft(self, partition, len_pow):
         """Pad zeros on both sides for FFT
@@ -568,9 +542,7 @@ class ComplexData(DataBase):
             truncated data
         """
         truncated_waveform = self.truncate(before, after, copy)
-        return ComplexData(
-            truncated_waveform.values, index=truncated_waveform.index, ifo=self.ifo
-        )
+        return ComplexData(truncated_waveform.values, index=truncated_waveform.index, ifo=self.ifo)
 
 
 class RealData(DataBase):
@@ -585,16 +557,14 @@ class RealData(DataBase):
     def __add__(self, other):
         if all(self.index.values != other.index.values):
             raise ValueError("Two arrays don't have the same time")
-        return RealData(
-            self.values + other.values, index=self.index.values, ifo=self.ifo
-        )
+        return RealData(self.values + other.values, index=self.index.values, ifo=self.ifo)
 
     @property
     def fft_freq(self):
         """FFT angular frequency stamps."""
         return np.fft.rfftfreq(len(self), d=self.time_interval) * 2 * np.pi
 
-    def fft_data(self, window='Tukey', alpha=0.2):
+    def fft_data(self, window="Tukey", alpha=0.2):
         """FFT of gravitational-wave data.
 
         Arguments
@@ -604,19 +574,17 @@ class RealData(DataBase):
         alpha : float
             alpha for the fft window
         """
-        if window == 'Tukey':
+        if window == "Tukey":
             windowed_signal = self.apply_tukey(alpha=alpha)
         elif window == None:
             windowed_signal = self.values
         else:
-            raise ValueError(
-                'That is not a FFT window that has been implemented.')
+            raise ValueError("That is not a FFT window that has been implemented.")
         return np.fft.rfft(windowed_signal, norm="ortho")
 
     def apply_tukey(self, alpha=0.2):
         """Add a Tukey window in the time domain"""
-        windowed_signal = ss.windows.tukey(
-            len(self.values), alpha=alpha) * self.values
+        windowed_signal = ss.windows.tukey(len(self.values), alpha=alpha) * self.values
         return windowed_signal
 
     def condition(
@@ -674,9 +642,7 @@ class RealData(DataBase):
         elif fhigh and not flow:
             b, a = ss.butter(4, fhigh / fny, btype="lowpass", output="ba")
         elif flow and fhigh:
-            b, a = ss.butter(
-                4, (flow / fny, fhigh / fny), btype="bandpass", output="ba"
-            )
+            b, a = ss.butter(4, (flow / fny, fhigh / fny), btype="bandpass", output="ba")
 
         if flow or fhigh:
             cond_data = ss.filtfilt(b, a, raw_data)
@@ -746,9 +712,7 @@ class Noise:
             name of interferometer, by default None
         """
         filereader = np.loadtxt(filename)
-        setattr(
-            self, attr_name, RealData(filereader[:, 1], index=filereader[:, 0], ifo=ifo)
-        )
+        setattr(self, attr_name, RealData(filereader[:, 1], index=filereader[:, 0], ifo=ifo))
 
     def __psd_to_acf(self, psd):
         """Inverse FFT PSD to ACF
@@ -803,6 +767,4 @@ class Noise:
     @property
     def bilby_psd(self):
         """Construct a Bilby `PowerSpectralDensity` instance."""
-        return bilby.gw.detector.PowerSpectralDensity(
-            frequency_array=self.psd.time, psd_array=self.psd.values
-        )
+        return bilby.gw.detector.PowerSpectralDensity(frequency_array=self.psd.time, psd_array=self.psd.values)
