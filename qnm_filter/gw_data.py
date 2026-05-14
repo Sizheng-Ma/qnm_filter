@@ -141,9 +141,7 @@ class FilterBase:
             return final_rational_filter
         else:
             if (self.mass is None) or (self.chi is None):
-                raise ValueError(
-                    f"Mass = {self.mass}" f" and Spin = {self.chi} are needed"
-                )
+                raise ValueError(f"Mass = {self.mass} and Spin = {self.chi} are needed")
         normalized_freq = freq * self.mass
         for mode in self.model_list:
             omega = qnm.modes_cache(s=-2, l=mode["l"], m=mode["m"], n=mode["n"])(
@@ -169,9 +167,7 @@ class FilterBase:
             return final_rational_filter
         else:
             if (self.mass is None) or (self.chi is None):
-                raise ValueError(
-                    f"Mass = {self.mass}" f" and Spin = {self.chi} are needed"
-                )
+                raise ValueError(f"Mass = {self.mass} and Spin = {self.chi} are needed")
         normalized_freq = freq * self.mass * T_MSUN
         for mode in self.model_list:
             final_rational_filter *= self.single_filter(
@@ -419,7 +415,7 @@ class RealData(DataBase):
         """FFT angular frequency stamps."""
         return np.fft.rfftfreq(len(self), d=self.time_interval) * 2 * np.pi
 
-    def fft_data(self, window='Tukey', alpha=0.2):
+    def fft_data(self, window="Tukey", alpha=0.2):
         """FFT of gravitational-wave data.
 
         Arguments
@@ -429,19 +425,17 @@ class RealData(DataBase):
         alpha : float
             alpha for the fft window
         """
-        if window == 'Tukey':
+        if window == "Tukey":
             windowed_signal = self.apply_tukey(alpha=alpha)
         elif window == None:
             windowed_signal = self.values
         else:
-            raise ValueError(
-                'That is not a FFT window that has been implemented.')
+            raise ValueError("That is not a FFT window that has been implemented.")
         return np.fft.rfft(windowed_signal, norm="ortho")
 
     def apply_tukey(self, alpha=0.2):
         """Add a Tukey window in the time domain"""
-        windowed_signal = ss.windows.tukey(
-            len(self.values), alpha=alpha) * self.values
+        windowed_signal = ss.windows.tukey(len(self.values), alpha=alpha) * self.values
         return windowed_signal
 
     def condition(
