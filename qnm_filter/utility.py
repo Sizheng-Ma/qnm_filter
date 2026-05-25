@@ -502,7 +502,7 @@ def time_shift_from_sky(ifo, ra, dec, t_init):
     return dt_ifo
 
 
-def compute_filter_time_shift(chi, input_model_list, double_shift, mass=None):
+def compute_filter_time_shift(chi, input_model_list, double_shift, mass=None, si=True):
     """Compute the time shift induced by a list of filters, see Eq. (16) of
     https://arxiv.org/abs/2207.10870.
 
@@ -516,6 +516,8 @@ def compute_filter_time_shift(chi, input_model_list, double_shift, mass=None):
         if true, double the time shift due to mirror modes
     mass : double
         in solar mass, if provided, convert the time to second
+    si : bool
+        if True, returns in units of seconds, otherwise in units of mass
     """
     time = 0
     model_list = []
@@ -534,6 +536,8 @@ def compute_filter_time_shift(chi, input_model_list, double_shift, mass=None):
         time *= 2
 
     if mass != None:
-        T_MSUN = c.M_sun.value * c.G.value / c.c.value**3
-        time *= mass * T_MSUN
+        time *= mass
+        if si:
+            T_MSUN = c.M_sun.value * c.G.value / c.c.value**3
+            time *= T_MSUN
     return time
