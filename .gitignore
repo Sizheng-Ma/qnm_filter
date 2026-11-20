@@ -134,3 +134,7 @@ dmypy.json
 # Others
 .vscode
 run_tests*/
+
+# macOS
+.DS_Store
+._*

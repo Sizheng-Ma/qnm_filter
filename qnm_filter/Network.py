@@ -74,6 +74,21 @@ class Network(object):
         self.cholesky_L = {}
         self.i0_dict = {}
 
+        # Optional floor on the PSD below `flow`, as (flow_hz, frac), or None to
+        # disable. High-passing drives the PSD to ~0 below `flow`, making the
+        # covariance nearly singular there; flooring those bins to
+        # frac * (in-band median) keeps C^{-1} bounded. Applied in compute_acfs.
+        self.psd_floor = None
+        # Raw Welch PSDs, reused by compute_acfs(acfs_update=True): the noise data
+        # is fixed during sampling, only the calibration scaling changes.
+        self._raw_psd_cache = {}
+        # Covariance solver prepared by the last call to cholesky_decomposition()
+        # ("cholesky") or compute_toeplitz() ("toeplitz"), and the diagonal
+        # jitter (fraction of acf[0]) used to build it.
+        self._toeplitz_col = {}
+        self._solver = "cholesky"
+        self._eps_frac = 0.0
+
         self.ra = kws.get("ra", None)
         self.dec = kws.get("dec", None)
         self.t_init = kws.get("t_init", None)
@@ -198,37 +213,111 @@ class Network(object):
                 remove_mean=kwargs.get("remove_mean", True),
             )
 
-    def compute_acfs(self, attr_name, **kws) -> None:
+    def compute_acfs(self, attr_name, cal_response=None, acfs_update=False, **kws) -> None:
         """Compute ACFs with data named `attr_name`.
 
         Parameters
         ----------
         attr_name : string
             Name of data for ACF estimation
+        cal_response : dict, optional
+            {ifo: R(omega)} calibration response. If given, each IFO's PSD is
+            multiplied by ``|R(omega)|^2`` before the ACF is computed. IFOs not in
+            the dict are left unchanged.
+        acfs_update : bool
+            Set True when recomputing the ACFs at every likelihood call (e.g.
+            when sampling calibration). Reuses the cached raw Welch PSD instead of
+            re-estimating it, and does not warn about overwriting ACFs.
+        **kws
+            Passed to :meth:`Noise.welch`.
         """
         noisy_data = getattr(self, attr_name)
-        if self.acfs:
+        if self.acfs and not acfs_update:
             warnings.warn("Overwriting ACFs")
         for ifo, data in noisy_data.items():
             noise = Noise(time=data.time, signal=data.values)
-            noise.welch(**kws)
+
+            psd_key = (attr_name, ifo, tuple(sorted(kws.items())))
+            if acfs_update and psd_key in self._raw_psd_cache:
+                freqs, values = self._raw_psd_cache[psd_key]
+                noise.psd = RealData(values, index=freqs, ifo=ifo)
+            else:
+                noise.welch(**kws)
+                self._raw_psd_cache[psd_key] = (
+                    np.asarray(noise.psd.time).copy(),
+                    np.asarray(noise.psd.values).copy(),
+                )
+
+            if cal_response is not None and ifo in cal_response:
+                freqs = np.asarray(noise.psd.time)
+                scale = np.abs(cal_response[ifo](2 * np.pi * freqs)) ** 2
+                noise.psd = RealData(noise.psd.values * scale, index=freqs, ifo=ifo)
+
+            if self.psd_floor is not None:
+                flow_hz, frac = self.psd_floor
+                freqs = np.asarray(noise.psd.time)
+                psd = np.asarray(noise.psd.values).copy()
+                inband = psd[freqs >= flow_hz]
+                if inband.size:
+                    below = freqs < flow_hz
+                    psd[below] = np.maximum(psd[below], frac * np.median(inband))
+                    noise.psd = RealData(psd, index=freqs, ifo=ifo)
+
             noise.from_psd()
             self.acfs[ifo] = noise.acf
 
-    def cholesky_decomposition(self) -> None:
+    def _truncated_acf(self, ifo, eps_frac):
+        """First sampling_n entries of the ACF, with diagonal jitter
+        ``eps_frac * acf[0]`` added to the zero lag."""
+        acf = self.acfs[ifo]
+        if self.sampling_n > len(acf) / 2:
+            raise ValueError("The sampling_n is more than half the acf length")
+        if abs(acf.fft_span / self.srate - 1) > 1e-8:
+            raise ValueError("Sampling rate is not correct: {}".format(acf.fft_span))
+        truncated_acf = acf.iloc[: self.sampling_n].values
+        if eps_frac:
+            truncated_acf = np.array(truncated_acf, dtype=float, copy=True)
+            truncated_acf[0] += eps_frac * truncated_acf[0]
+        return truncated_acf
+
+    def cholesky_decomposition(self, eps_frac=0.0) -> None:
         """Compute the Cholesky-decomposition of covariance matrix :math:`C = L^TL`,
         and the inverse of :math:`L`.
+
+        Parameters
+        ----------
+        eps_frac : float
+            Diagonal jitter added to the covariance, as a fraction of acf[0]
+            (default 0). Also used by later :meth:`compute_toeplitz` calls.
         """
-        for ifo, acf in self.acfs.items():
-            if self.sampling_n > len(self.acfs[ifo]) / 2:
-                raise ValueError("The sampling_n is more than half the acf length")
-            if abs(acf.fft_span / self.srate - 1) > 1e-8:
-                raise ValueError(
-                    "Sampling rate is not correct: {}".format(acf.fft_span)
-                )
-            truncated_acf = acf.iloc[: self.sampling_n].values
+        for ifo in self.acfs:
+            truncated_acf = self._truncated_acf(ifo, eps_frac)
             L = np.linalg.cholesky(sl.toeplitz(truncated_acf))
             self.cholesky_L[ifo] = L
+        self._eps_frac = eps_frac
+        self._solver = "cholesky"
+
+    def compute_toeplitz(self, eps_frac=None) -> None:
+        """Prepare a Toeplitz (Levinson) solve of the covariance instead of a
+        Cholesky factorisation.
+
+        :meth:`compute_likelihood` then evaluates :math:`d^T C^{-1} d` with
+        ``scipy.linalg.solve_toeplitz`` (O(N^2)) rather than a Cholesky factor
+        (O(N^3)); the result is the same to machine precision. Used when the
+        covariance changes at every likelihood call (``acfs_update=True``).
+        Call :meth:`cholesky_decomposition` to switch back.
+
+        Parameters
+        ----------
+        eps_frac : float, optional
+            Diagonal jitter as a fraction of acf[0]. Defaults to the value last
+            passed to :meth:`cholesky_decomposition`.
+        """
+        if eps_frac is None:
+            eps_frac = self._eps_frac
+        for ifo in self.acfs:
+            self._toeplitz_col[ifo] = self._truncated_acf(ifo, eps_frac)
+        self._solver = "toeplitz"
 
     def compute_likelihood(self, apply_filter=True) -> float:
         """Compute likelihood for interferometer network.
@@ -251,8 +340,14 @@ class Network(object):
             truncation = self.truncate_data(self.filtered_data)
 
         for ifo, data in truncation.items():
-            y = sl.solve_triangular(self.cholesky_L[ifo], data, lower=True)
-            likelihood -= 0.5 * np.dot(y, y)
+            if self._solver == "toeplitz":
+                col = self._toeplitz_col[ifo]
+                d = np.array(data, dtype=float)  # writable copy: levinson rejects read-only buffers
+                x = sl.solve_toeplitz((col, col), d)
+                likelihood -= 0.5 * np.dot(d, x)
+            else:
+                y = sl.solve_triangular(self.cholesky_L[ifo], data, lower=True)
+                likelihood -= 0.5 * np.dot(y, y)
         return likelihood
 
     def compute_likelihood_ftau(self) -> float:
@@ -274,15 +369,21 @@ class Network(object):
             likelihood -= 0.5 * np.dot(y, y)
         return likelihood
 
-    def add_filter(self, window='Tukey', alpha=0.2, **kwargs):
+    def add_filter(self, window='Tukey', alpha=0.2, cal_response=None, **kwargs):
         """Apply rational filters to :attr:`Network.original_data` and store
-        the filtered data in :attr:`Network.filtered_data`."""
+        the filtered data in :attr:`Network.filtered_data`.
+
+        If ``cal_response`` ({ifo: R(omega)}) is given, the data of each IFO in it
+        is also multiplied by R(omega) in the frequency domain."""
         for ifo, data in self.original_data.items():
             data_in_freq = data.fft_data(window=window, alpha=alpha)
             freq = data.fft_freq
             filter_in_freq = Filter(**kwargs).total_filter(freq)
+            prod = filter_in_freq * data_in_freq
+            if cal_response is not None and ifo in cal_response:
+                prod = prod * cal_response[ifo](freq)
             ifft = np.fft.irfft(
-                filter_in_freq * data_in_freq, norm="ortho", n=len(data)
+                prod, norm="ortho", n=len(data)
             )
             self.filtered_data[ifo] = RealData(ifft, index=data.index, ifo=ifo)
 
@@ -307,6 +408,9 @@ class Network(object):
             in solar mass, mass of rational filters
         chi_est : float
             dimensionless spin of rational filters
+        cal_response : dict, optional
+            {ifo: R(omega)} calibration response applied to the data
+            (see :meth:`add_filter`).
 
         Returns
         -------
@@ -315,7 +419,9 @@ class Network(object):
         model_list = kwargs.pop("model_list")
         window = kwargs.get("window", 'Tukey')
         alpha = kwargs.get("alpha", 0.2)
-        self.add_filter(mass=M_est, chi=chi_est, model_list=model_list, window=window, alpha=alpha)
+        cal_response = kwargs.get("cal_response", None)
+        self.add_filter(mass=M_est, chi=chi_est, model_list=model_list, window=window, alpha=alpha,
+                        cal_response=cal_response)
         return self.compute_likelihood(apply_filter=True)
 
     def likelihood_vs_f_tau(self, f, tau) -> float:
