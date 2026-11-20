@@ -3,5 +3,6 @@ from .gw_data import *
 from .utility import *
 from .bilby_helper import *
 from .sxs_helper import *
+from .calibration_utils import *
 
 __author__ = "Sizheng Ma, Neil Lu"
